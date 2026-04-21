@@ -1,8 +1,3 @@
-bash
-
-cat /mnt/user-data/outputs/arena.html
-Saída
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -166,8 +161,7 @@ function getApiKey() { return document.getElementById('apiKey').value.trim(); }
 function getContestId() { return document.getElementById('contestId').value.trim(); }
 
 function setStatus(msg, state='loading') {
-  const bar = document.getElementById('statusBar');
-  bar.style.display = 'flex';
+  document.getElementById('statusBar').style.display = 'flex';
   document.getElementById('statusDot').className = 'dot ' + state;
   document.getElementById('statusText').textContent = msg;
 }
@@ -196,6 +190,23 @@ async function apiGet(path) {
   return data;
 }
 
+async function fetchAllPages(basePath, pageParam='page') {
+  const all = [];
+  let page = 1;
+  let total = Infinity;
+  while (all.length < total) {
+    const sep = basePath.includes('?') ? '&' : '?';
+    const data = await apiGet(`${basePath}${sep}limit=100&${pageParam}=${page}`);
+    const items = data.data || [];
+    all.push(...items);
+    total = data.pagination?.total ?? all.length;
+    if (items.length < 100) break;
+    page++;
+    if (page > 1) await sleep(200);
+  }
+  return all;
+}
+
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function loadData() {
@@ -212,33 +223,31 @@ async function loadData() {
   allRows = [];
 
   try {
+    // STEP 1: Get contest info for matchDate
     setStatus('Buscando informações do contest...', 'loading');
     setProgress(5, 'Buscando contest...');
     const contestData = await apiGet(`/contests/${contestId}`);
     let matchDate = new Date().toISOString().split('T')[0];
     if (contestData.startDate) matchDate = contestData.startDate.split('T')[0];
-    else if (contestData.data && contestData.data.startDate) matchDate = contestData.data.startDate.split('T')[0];
+    else if (contestData.data?.startDate) matchDate = contestData.data.startDate.split('T')[0];
 
-    setStatus('Buscando 240 champions com stats...', 'loading');
-    setProgress(10, 'Buscando champions...');
-  const champMap = {};
-let champPage = 1;
-let champTotal = Infinity;
-while (Object.keys(champMap).length < champTotal) {
-  const champData = await apiGet(`/mokis?isChampion=true&limit=100&page=${champPage}`);
-  champData.data.forEach(c => { champMap[c.mokiTokenId] = c; });
-  champTotal = champData.pagination.total;
-  if (champData.data.length < 100) break;
-  champPage++;
-  await sleep(300);
-}
+    // STEP 2: Get all champions with stats (paginated, max 100/page)
+    setStatus('Buscando champions com stats...', 'loading');
+    setProgress(10, 'Buscando champions (paginado)...');
+    const champList = await fetchAllPages('/mokis?isChampion=true');
+    const champMap = {};
+    champList.forEach(c => { champMap[c.mokiTokenId] = c; });
+    setProgress(20, `${champList.length} champions encontrados`);
+
+    // STEP 3: Get all matches (paginated, max 100/page)
     setStatus('Buscando matchups do contest...', 'loading');
     setProgress(25, `Buscando partidas (data: ${matchDate})...`);
-    const matchesData = await apiGet(`/contests/${contestId}/matches?matchDate=${matchDate}&limit=1200`);
-    const matches = matchesData.data || [];
+    const matches = await fetchAllPages(`/contests/${contestId}/matches?matchDate=${matchDate}`);
+    setProgress(45, `${matches.length} partidas encontradas`);
 
-    setStatus('Identificando suportes únicos...', 'loading');
-    setProgress(40, 'Coletando IDs dos suportes...');
+    // STEP 4: Collect unique support moki IDs
+    setStatus('Identificando suportes...', 'loading');
+    setProgress(47, 'Coletando IDs dos suportes...');
     const supportIds = new Set();
     matches.forEach(m => {
       m.players.forEach(p => {
@@ -246,6 +255,7 @@ while (Object.keys(champMap).length < champTotal) {
       });
     });
 
+    // STEP 5: Fetch support stats in bulk batches of 50
     const supportIdArr = Array.from(supportIds);
     const supportMap = {};
     const batchSize = 50;
@@ -253,19 +263,19 @@ while (Object.keys(champMap).length < champTotal) {
 
     for (let i = 0; i < batches; i++) {
       const batch = supportIdArr.slice(i * batchSize, (i + 1) * batchSize);
-      const pct = 40 + Math.round((i / batches) * 38);
+      const pct = 47 + Math.round((i / batches) * 33);
       setStatus(`Buscando stats suportes: lote ${i+1}/${batches}...`, 'loading');
-      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches}...`);
+      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches} (${batch.length} mokis)...`);
       try {
         const bulkData = await apiGet(`/mokis/bulk?ids=${batch.join(',')}`);
         bulkData.data.forEach(m => { supportMap[m.id] = m; });
       } catch(e) { console.warn('Bulk error:', e); }
-      if (i < batches - 1) await sleep(350);
+      if (i < batches - 1) await sleep(250);
     }
 
+    // STEP 6: Build champion match index
     setStatus('Analisando partidas...', 'loading');
     setProgress(82, 'Cruzando dados...');
-
     const champMatches = {};
     matches.forEach(m => {
       m.players.forEach(p => {
@@ -276,6 +286,7 @@ while (Object.keys(champMap).length < champTotal) {
       });
     });
 
+    // STEP 7: Analyze each champion
     setProgress(90, 'Calculando scores...');
     allRows = [];
 
@@ -295,25 +306,22 @@ while (Object.keys(champMap).length < champTotal) {
           return supportMap[p.mokiId]?.gameStats?.stats;
         };
 
-        const classifyPlayer = (p, teamPlayers) => classify(p.class, getMokiStats(p), teamPlayers, p, champMap, supportMap);
+        const classifyPlayer = (p, team) => classify(p.class, getMokiStats(p), team, p, champMap, supportMap);
 
-        const allyClass = allies.map(p => classifyPlayer(p, allies));
-        const enemyClass = enemies.map(p => classifyPlayer(p, enemies));
+        const allyC = allies.map(p => classifyPlayer(p, allies));
+        const enemyC = enemies.map(p => classifyPlayer(p, enemies));
 
-        const allyK = allyClass.filter(c => c === 'K').length;
-        const allyG = allyClass.filter(c => c === 'G').length;
-        const enemyK = enemyClass.filter(c => c === 'K').length;
-        const enemyG = enemyClass.filter(c => c === 'G').length;
+        const aK = allyC.filter(c => c==='K').length;
+        const aG = allyC.filter(c => c==='G').length;
+        const eK = enemyC.filter(c => c==='K').length;
+        const eG = enemyC.filter(c => c==='G').length;
 
-        if (allyG > 0) gBlue++;
-        if (allyK > 0) kBlue++;
-        if (enemyG > 0) gRed++;
-        if (enemyK > 0) kRed++;
-
-        ggBlue += allyG;
-        kkBlue += allyK;
-        ggRed += enemyG;
-        kkRed += enemyK;
+        if (aG > 0) gBlue++;
+        if (aK > 0) kBlue++;
+        if (eG > 0) gRed++;
+        if (eK > 0) kRed++;
+        ggBlue += aG; kkBlue += aK;
+        ggRed += eG; kkRed += eK;
       });
 
       allRows.push({
@@ -326,7 +334,7 @@ while (Object.keys(champMap).length < champTotal) {
     }
 
     setProgress(100, `Análise completa — ${allRows.length} champions`);
-    setStatus(`✓ ${allRows.length} champions analisados | ${matches.length} partidas processadas`, 'done');
+    setStatus(`✓ ${allRows.length} champions | ${matches.length} partidas`, 'done');
     renderSummary();
     renderTable();
     document.getElementById('filtersBar').style.display = 'flex';
@@ -353,7 +361,8 @@ function classify(cls, stats, teammates, self, champMap, supportMap) {
 
   if (cls === 'Sprinter') {
     if (dex > def) return 'G';
-    const otherSprinters = teammates.filter(t => t !== self && t.class === 'Sprinter');
+    const others = teammates.filter(t => t !== self);
+    const otherSprinters = others.filter(t => t.class === 'Sprinter');
     if (otherSprinters.length > 0) {
       const allDefGtDex = otherSprinters.every(t => {
         const s = champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats;
@@ -361,9 +370,8 @@ function classify(cls, stats, teammates, self, champMap, supportMap) {
       });
       if (allDefGtDex) return 'K';
     }
-    const hasDefender = teammates.some(t => t !== self && t.class === 'Defender');
+    const hasDefender = others.some(t => t.class === 'Defender');
     if (hasDefender && def > dex) return 'K';
-    const others = teammates.filter(t => t !== self);
     const gachas = others.filter(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats) === 'G').length;
     if (gachas >= 2) return 'N';
     return 'N';
