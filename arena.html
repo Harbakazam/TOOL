@@ -221,10 +221,17 @@ async function loadData() {
 
     setStatus('Buscando 240 champions com stats...', 'loading');
     setProgress(10, 'Buscando champions...');
-    const champData = await apiGet(`/mokis?isChampion=true&limit=240`);
-    const champMap = {};
-    champData.data.forEach(c => { champMap[c.mokiTokenId] = c; });
-
+  const champMap = {};
+let champPage = 1;
+let champTotal = Infinity;
+while (Object.keys(champMap).length < champTotal) {
+  const champData = await apiGet(`/mokis?isChampion=true&limit=100&page=${champPage}`);
+  champData.data.forEach(c => { champMap[c.mokiTokenId] = c; });
+  champTotal = champData.pagination.total;
+  if (champData.data.length < 100) break;
+  champPage++;
+  await sleep(300);
+}
     setStatus('Buscando matchups do contest...', 'loading');
     setProgress(25, `Buscando partidas (data: ${matchDate})...`);
     const matchesData = await apiGet(`/contests/${contestId}/matches?matchDate=${matchDate}&limit=1200`);
