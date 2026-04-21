@@ -1,3 +1,8 @@
+bash
+
+cat /mnt/user-data/outputs/arena.html
+Saída
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -57,8 +62,6 @@
   th.sorted { color: var(--accent); }
   .th-blue { color: var(--blue) !important; }
   .th-red { color: var(--red) !important; }
-  th.sorted.th-blue { color: #88bbff !important; }
-  th.sorted.th-red { color: #ff8899 !important; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:hover { background: var(--surface); }
   tbody tr:last-child { border-bottom: none; }
@@ -152,7 +155,7 @@
 <div id="emptyMsg" class="empty" style="display:none">Nenhum dado encontrado.</div>
 
 <script>
-const BASE = 'https://api.grandarena.gg/api/v1';
+const PROXY = 'https://toolproxy.aikazamage.workers.dev';
 let allRows = [];
 let sortCol = 'kkRed';
 let sortDir = -1;
@@ -181,13 +184,15 @@ function updateRate(headers) {
   if (rem && lim) document.getElementById('rateInfo').textContent = `Rate: ${rem}/${lim} restantes`;
 }
 
-async function apiGet(url) {
-  if (cache[url]) return cache[url];
-  const res = await fetch(url, { headers: { 'x-api-key': getApiKey() } });
+async function apiGet(path) {
+  if (cache[path]) return cache[path];
+  const res = await fetch(`${PROXY}?url=${encodeURIComponent(path)}`, {
+    headers: { 'x-api-key': getApiKey() }
+  });
   updateRate(res.headers);
-  if (!res.ok) throw new Error(`HTTP ${res.status} em ${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} em ${path}`);
   const data = await res.json();
-  cache[url] = data;
+  cache[path] = data;
   return data;
 }
 
@@ -207,34 +212,24 @@ async function loadData() {
   allRows = [];
 
   try {
-    // STEP 1: Get contest info to find matchDate
     setStatus('Buscando informações do contest...', 'loading');
     setProgress(5, 'Buscando contest...');
-    const contestData = await apiGet(`${BASE}/contests/${contestId}`);
+    const contestData = await apiGet(`/contests/${contestId}`);
     let matchDate = new Date().toISOString().split('T')[0];
     if (contestData.startDate) matchDate = contestData.startDate.split('T')[0];
     else if (contestData.data && contestData.data.startDate) matchDate = contestData.data.startDate.split('T')[0];
 
-    // STEP 2: Get all 240 champions with stats
     setStatus('Buscando 240 champions com stats...', 'loading');
     setProgress(10, 'Buscando champions...');
-    const champData = await apiGet(`${BASE}/mokis?isChampion=true&limit=240`);
+    const champData = await apiGet(`/mokis?isChampion=true&limit=240`);
     const champMap = {};
     champData.data.forEach(c => { champMap[c.mokiTokenId] = c; });
 
-    // STEP 3: Get all matches with matchDate filter (required by API)
     setStatus('Buscando matchups do contest...', 'loading');
     setProgress(25, `Buscando partidas (data: ${matchDate})...`);
-    const matchesData = await apiGet(`${BASE}/contests/${contestId}/matches?matchDate=${matchDate}&limit=1200`);
-    const matches = matchesData.data;
+    const matchesData = await apiGet(`/contests/${contestId}/matches?matchDate=${matchDate}&limit=1200`);
+    const matches = matchesData.data || [];
 
-    if (!matches || matches.length === 0) {
-      // try without date if empty
-      const matchesData2 = await apiGet(`${BASE}/contests/${contestId}/matches?limit=1200`);
-      matches.push(...(matchesData2.data || []));
-    }
-
-    // STEP 4: Collect unique support moki IDs (non-champions)
     setStatus('Identificando suportes únicos...', 'loading');
     setProgress(40, 'Coletando IDs dos suportes...');
     const supportIds = new Set();
@@ -244,7 +239,6 @@ async function loadData() {
       });
     });
 
-    // STEP 5: Fetch support stats in bulk batches of 50
     const supportIdArr = Array.from(supportIds);
     const supportMap = {};
     const batchSize = 50;
@@ -254,17 +248,14 @@ async function loadData() {
       const batch = supportIdArr.slice(i * batchSize, (i + 1) * batchSize);
       const pct = 40 + Math.round((i / batches) * 38);
       setStatus(`Buscando stats suportes: lote ${i+1}/${batches}...`, 'loading');
-      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches} (${batch.length} mokis)...`);
+      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches}...`);
       try {
-        const bulkData = await apiGet(`${BASE}/mokis/bulk?ids=${batch.join(',')}`);
+        const bulkData = await apiGet(`/mokis/bulk?ids=${batch.join(',')}`);
         bulkData.data.forEach(m => { supportMap[m.id] = m; });
-      } catch(e) {
-        console.warn('Bulk batch error:', e);
-      }
+      } catch(e) { console.warn('Bulk error:', e); }
       if (i < batches - 1) await sleep(350);
     }
 
-    // STEP 6: Build champion match index
     setStatus('Analisando partidas...', 'loading');
     setProgress(82, 'Cruzando dados...');
 
@@ -278,7 +269,6 @@ async function loadData() {
       });
     });
 
-    // STEP 7: Analyze each champion
     setProgress(90, 'Calculando scores...');
     allRows = [];
 
@@ -298,18 +288,15 @@ async function loadData() {
           return supportMap[p.mokiId]?.gameStats?.stats;
         };
 
-        const classifyPlayer = (p, teamPlayers) => {
-          const stats = getMokiStats(p);
-          return classify(p.class, stats, teamPlayers, p, champMap, supportMap);
-        };
+        const classifyPlayer = (p, teamPlayers) => classify(p.class, getMokiStats(p), teamPlayers, p, champMap, supportMap);
 
-        const allyClass = allies.map(p => ({ p, c: classifyPlayer(p, allies) }));
-        const enemyClass = enemies.map(p => ({ p, c: classifyPlayer(p, enemies) }));
+        const allyClass = allies.map(p => classifyPlayer(p, allies));
+        const enemyClass = enemies.map(p => classifyPlayer(p, enemies));
 
-        const allyK = allyClass.filter(x => x.c === 'K').length;
-        const allyG = allyClass.filter(x => x.c === 'G').length;
-        const enemyK = enemyClass.filter(x => x.c === 'K').length;
-        const enemyG = enemyClass.filter(x => x.c === 'G').length;
+        const allyK = allyClass.filter(c => c === 'K').length;
+        const allyG = allyClass.filter(c => c === 'G').length;
+        const enemyK = enemyClass.filter(c => c === 'K').length;
+        const enemyG = enemyClass.filter(c => c === 'G').length;
 
         if (allyG > 0) gBlue++;
         if (allyK > 0) kBlue++;
@@ -355,62 +342,53 @@ function classify(cls, stats, teammates, self, champMap, supportMap) {
 
   if (cls === 'Striker') return 'G';
   if (cls === 'Bruiser') return 'K';
-
   if (cls === 'Grinder') return str > dex ? 'K' : 'G';
 
   if (cls === 'Sprinter') {
     if (dex > def) return 'G';
-    // Sprinter + Sprinter both def > dex = K
     const otherSprinters = teammates.filter(t => t !== self && t.class === 'Sprinter');
     if (otherSprinters.length > 0) {
-      const otherStats = otherSprinters.map(t => {
-        if (champMap[t.mokiTokenId]) return champMap[t.mokiTokenId]?.gameStats?.stats;
-        return supportMap[t.mokiId]?.gameStats?.stats;
+      const allDefGtDex = otherSprinters.every(t => {
+        const s = champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats;
+        return (s?.defense?.total||0) > (s?.dexterity?.total||0);
       });
-      const allDefGtDex = otherStats.every(s => (s?.defense?.total||0) > (s?.dexterity?.total||0));
       if (allDefGtDex) return 'K';
     }
-    // Defender + Sprinter def > dex = K
     const hasDefender = teammates.some(t => t !== self && t.class === 'Defender');
     if (hasDefender && def > dex) return 'K';
-    // If paired with 2 gachas = N
     const others = teammates.filter(t => t !== self);
-    const othersClassified = others.map(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats));
-    if (othersClassified.filter(c => c === 'G').length >= 2) return 'N';
+    const gachas = others.filter(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats) === 'G').length;
+    if (gachas >= 2) return 'N';
     return 'N';
   }
 
   if (cls === 'Defender') {
     const others = teammates.filter(t => t !== self);
-    const otherDefenders = others.filter(t => t.class === 'Defender');
-    if (otherDefenders.length > 0) return 'K';
+    if (others.some(t => t.class === 'Defender')) return 'K';
     const sprinters = others.filter(t => t.class === 'Sprinter');
     if (sprinters.length > 0) {
-      const spStats = sprinters.map(t => champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats);
-      const spDefGtDex = spStats.some(s => (s?.defense?.total||0) > (s?.dexterity?.total||0));
-      if (spDefGtDex) return 'K';
+      const hasDefSprint = sprinters.some(t => {
+        const s = champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats;
+        return (s?.defense?.total||0) > (s?.dexterity?.total||0);
+      });
+      if (hasDefSprint) return 'K';
     }
-    // Paired with 2 gachas = N
-    const othersClassified = others.map(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats));
-    if (othersClassified.filter(c => c === 'G').length >= 2) return 'N';
+    const gachas = others.filter(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats) === 'G').length;
+    if (gachas >= 2) return 'N';
     return 'N';
   }
 
   if (cls === 'Support') {
-    // Find champion partner
     const champPartner = teammates.find(t => t !== self && champMap[t.mokiTokenId]);
     if (champPartner) {
       if (champPartner.class === 'Defender') return 'K';
       if (champPartner.class === 'Striker') return 'G';
     }
-    // paired with Bruiser/Generalist without Defender champ = N
     return 'N';
   }
 
-  // Generalistas: Forward, Anchor, Center, Flanker
   const generalistas = ['Forward','Anchor','Center','Flanker'];
   if (generalistas.includes(cls)) {
-    // Without kill avg data, use strength training ratio as proxy
     const strRatio = strTrain / strTotal;
     if (strRatio >= 0.2 && str > dex) return 'K';
     return 'N';
@@ -445,11 +423,8 @@ function sortBy(col) {
     th.classList.remove('sorted');
     const a = th.querySelector('.sort-arrow');
     if (a) a.textContent = '';
-  });
-  document.querySelectorAll('th').forEach((th, i) => {
     if (cols[i] === col) {
       th.classList.add('sorted');
-      const a = th.querySelector('.sort-arrow');
       if (a) a.textContent = sortDir === -1 ? ' ↓' : ' ↑';
     }
   });
