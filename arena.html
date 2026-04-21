@@ -20,49 +20,62 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 1.5rem; }
-  .header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  .header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
   .logo { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); }
   .logo span { color: var(--text); }
-  .setup { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end; }
-  .field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-family: 'Space Mono', monospace; }
-  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .setup { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 0.75rem; align-items: end; }
+  .field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-family: 'Space Mono', monospace; }
+  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 12px; outline: none; transition: border-color 0.2s; }
   .field input:focus { border-color: var(--accent); }
-  .btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 10px 24px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity 0.2s, transform 0.1s; white-space: nowrap; }
+  .btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 9px 20px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
   .btn:hover { opacity: 0.85; }
-  .btn:active { transform: scale(0.98); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .filters { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
-  .filter-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; }
-  .filter-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 12px; color: var(--muted); font-size: 12px; font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.15s; }
-  .filter-btn.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
-  .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 1rem; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px 16px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .filters-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: none; }
+  .filters-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 0.75rem; }
+  .filters-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.5rem; margin-bottom: 0.75rem; }
+  .filter-field label { display: block; font-size: 10px; color: var(--muted); margin-bottom: 3px; font-family: 'Space Mono', monospace; text-align: center; }
+  .filter-field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 11px; outline: none; text-align: center; }
+  .filter-field input:focus { border-color: var(--accent); }
+  .class-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--muted); font-size: 11px; font-family: 'Space Mono', monospace; cursor: pointer; transition: all 0.15s; }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 0.75rem; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); display: none; align-items: center; gap: 10px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .dot.loading { background: var(--accent); animation: pulse 1s infinite; }
   .dot.done { background: var(--accent); }
   .dot.error { background: var(--accent2); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .rate-info { margin-left: auto; font-size: 11px; color: var(--muted); }
-  .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
-  .progress-bar-bg { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 10px; overflow: hidden; }
+  .rate-info { margin-left: auto; font-size: 10px; }
+
+  .progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; display: none; }
+  .progress-bar-bg { background: var(--surface2); border-radius: 4px; height: 4px; margin-top: 8px; overflow: hidden; }
   .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
-  .progress-text { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
-  .summary-bar { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-  .summary-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
+  .progress-text { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .summary-bar { display: none; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .summary-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
   .summary-chip span { color: var(--text); font-weight: 700; }
-  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); display: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
   thead { background: var(--surface); position: sticky; top: 0; z-index: 10; }
-  th { padding: 10px 12px; text-align: left; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; transition: color 0.15s; }
+  th { padding: 9px 10px; text-align: left; font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
   th:hover { color: var(--text); }
   th.sorted { color: var(--accent); }
   .th-blue { color: var(--blue) !important; }
   .th-red { color: var(--red) !important; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
   tbody tr:hover { background: var(--surface); }
+  tbody tr.warning { background: rgba(255, 180, 0, 0.05); }
+  tbody tr.warning td:first-child::after { content: ' ⚠'; color: #ffb400; font-size: 10px; }
   tbody tr:last-child { border-bottom: none; }
-  td { padding: 10px 12px; white-space: nowrap; }
-  .champion-name { font-weight: 600; font-size: 13px; color: var(--text); }
-  .class-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 0.05em; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  td { padding: 9px 10px; white-space: nowrap; }
+  .champion-name { font-weight: 600; font-size: 12px; color: var(--text); }
+  .class-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-family: 'Space Mono', monospace; font-weight: 700; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
   .class-badge.Bruiser { background: rgba(255,102,68,0.15); color: #ff6644; border-color: rgba(255,102,68,0.3); }
   .class-badge.Striker { background: rgba(68,170,255,0.15); color: #44aaff; border-color: rgba(68,170,255,0.3); }
   .class-badge.Defender { background: rgba(100,200,100,0.15); color: #64c864; border-color: rgba(100,200,100,0.3); }
@@ -70,7 +83,7 @@
   .class-badge.Grinder { background: rgba(180,100,255,0.15); color: #b464ff; border-color: rgba(180,100,255,0.3); }
   .class-badge.Support { background: rgba(255,180,50,0.15); color: #ffb432; border-color: rgba(255,180,50,0.3); }
   .class-badge.Forward,.class-badge.Anchor,.class-badge.Center,.class-badge.Flanker { background: rgba(180,180,200,0.1); color: #aaaacc; border-color: rgba(180,180,200,0.2); }
-  .num { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; }
+  .num { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; }
   .num.blue { color: var(--blue); }
   .num.red { color: var(--red); }
   .num.zero { color: var(--border); }
@@ -78,13 +91,13 @@
   .col-group-red { border-left: 2px solid rgba(255,68,102,0.3); }
   .col-group-blue2 { border-left: 1px solid rgba(68,136,255,0.15); }
   .col-group-red2 { border-left: 1px solid rgba(255,68,102,0.15); }
-  .empty { text-align: center; padding: 4rem; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; }
+  .empty { text-align: center; padding: 4rem; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; display: none; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.85rem;font-weight:400">analyst</span></div>
 </div>
 
 <div class="setup">
@@ -97,71 +110,134 @@
     <input type="text" id="contestId" placeholder="69e5e8bbf5706e68ae6c16ed" />
   </div>
   <button class="btn" id="loadBtn" onclick="loadData()">Analisar</button>
+  <button class="btn-secondary" onclick="saveKey()">Salvar Key</button>
 </div>
 
-<div id="statusBar" class="status-bar" style="display:none">
+<div id="statusBar" class="status-bar">
   <div class="dot" id="statusDot"></div>
-  <span id="statusText">Carregando...</span>
+  <span id="statusText"></span>
   <span class="rate-info" id="rateInfo"></span>
 </div>
 
-<div id="progressWrap" class="progress-wrap" style="display:none">
-  <div class="progress-text" id="progressText">Iniciando...</div>
+<div id="progressWrap" class="progress-wrap">
+  <div class="progress-text" id="progressText"></div>
   <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
 </div>
 
-<div id="summaryBar" class="summary-bar" style="display:none"></div>
+<div id="summaryBar" class="summary-bar"></div>
 
-<div id="filtersBar" class="filters" style="display:none">
-  <span class="filter-label">Classe:</span>
-  <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
-  <button class="filter-btn" onclick="setFilter('Striker',this)">Striker</button>
-  <button class="filter-btn" onclick="setFilter('Defender',this)">Defender</button>
-  <button class="filter-btn" onclick="setFilter('Bruiser',this)">Bruiser</button>
-  <button class="filter-btn" onclick="setFilter('Sprinter',this)">Sprinter</button>
-  <button class="filter-btn" onclick="setFilter('Grinder',this)">Grinder</button>
-  <button class="filter-btn" onclick="setFilter('Support',this)">Support</button>
-  <button class="filter-btn" onclick="setFilter('Forward',this)">Forward</button>
-  <button class="filter-btn" onclick="setFilter('Flanker',this)">Flanker</button>
-  <button class="filter-btn" onclick="setFilter('Center',this)">Center</button>
-  <button class="filter-btn" onclick="setFilter('Anchor',this)">Anchor</button>
+<div id="filtersSection" class="filters-section">
+  <div class="filters-title">Filtros mínimos</div>
+  <div class="filters-grid">
+    <div class="filter-field">
+      <label>G🔵 min</label>
+      <input type="number" id="f-gBlue" min="0" max="10" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>K🔵 min</label>
+      <input type="number" id="f-kBlue" min="0" max="10" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>G🔴 min</label>
+      <input type="number" id="f-gRed" min="0" max="10" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>K🔴 min</label>
+      <input type="number" id="f-kRed" min="0" max="10" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>GG🔵 min</label>
+      <input type="number" id="f-ggBlue" min="0" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>KK🔵 min</label>
+      <input type="number" id="f-kkBlue" min="0" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>GG🔴 min</label>
+      <input type="number" id="f-ggRed" min="0" placeholder="—" oninput="applyFilters()">
+    </div>
+    <div class="filter-field">
+      <label>KK🔴 min</label>
+      <input type="number" id="f-kkRed" min="0" placeholder="—" oninput="applyFilters()">
+    </div>
+  </div>
+  <div class="class-filters" id="classFilters"></div>
 </div>
 
-<div id="tableWrap" class="table-wrap" style="display:none">
+<div id="tableWrap" class="table-wrap">
   <table>
     <thead>
       <tr>
-        <th onclick="sortBy('name')">Champion <span class="sort-arrow" id="arr-name"></span></th>
-        <th onclick="sortBy('class')">Classe <span class="sort-arrow" id="arr-class"></span></th>
-        <th class="col-group-blue th-blue" onclick="sortBy('gBlue')">G 🔵 <span class="sort-arrow" id="arr-gBlue"></span></th>
-        <th class="col-group-blue2 th-blue" onclick="sortBy('kBlue')">K 🔵 <span class="sort-arrow" id="arr-kBlue"></span></th>
-        <th class="col-group-red th-red" onclick="sortBy('gRed')">G 🔴 <span class="sort-arrow" id="arr-gRed"></span></th>
-        <th class="col-group-red2 th-red" onclick="sortBy('kRed')">K 🔴 <span class="sort-arrow" id="arr-kRed"></span></th>
-        <th class="col-group-blue th-blue" onclick="sortBy('ggBlue')">GG 🔵 <span class="sort-arrow" id="arr-ggBlue"></span></th>
-        <th class="col-group-blue2 th-blue" onclick="sortBy('kkBlue')">KK 🔵 <span class="sort-arrow" id="arr-kkBlue"></span></th>
-        <th class="col-group-red th-red" onclick="sortBy('ggRed')">GG 🔴 <span class="sort-arrow" id="arr-ggRed"></span></th>
-        <th class="col-group-red2 th-red" onclick="sortBy('kkRed')">KK 🔴 <span class="sort-arrow" id="arr-kkRed"></span></th>
+        <th onclick="sortBy('name')">Champion <span id="arr-name"></span></th>
+        <th onclick="sortBy('class')">Classe <span id="arr-class"></span></th>
+        <th class="col-group-blue th-blue" onclick="sortBy('gBlue')">G🔵 <span id="arr-gBlue"></span></th>
+        <th class="col-group-blue2 th-blue" onclick="sortBy('kBlue')">K🔵 <span id="arr-kBlue"></span></th>
+        <th class="col-group-red th-red" onclick="sortBy('gRed')">G🔴 <span id="arr-gRed"></span></th>
+        <th class="col-group-red2 th-red" onclick="sortBy('kRed')">K🔴 <span id="arr-kRed"></span></th>
+        <th class="col-group-blue th-blue" onclick="sortBy('ggBlue')">GG🔵 <span id="arr-ggBlue"></span></th>
+        <th class="col-group-blue2 th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
+        <th class="col-group-red th-red" onclick="sortBy('ggRed')">GG🔴 <span id="arr-ggRed"></span></th>
+        <th class="col-group-red2 th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
+        <th onclick="sortBy('matches')" style="color:var(--muted)">Partidas <span id="arr-matches"></span></th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 </div>
-
-<div id="emptyMsg" class="empty" style="display:none">Nenhum dado encontrado.</div>
+<div id="emptyMsg" class="empty">Nenhum champion encontrado com esses filtros.</div>
 
 <script>
 const PROXY = 'https://toolproxy.aikazamage.workers.dev';
+const CLASSES = ['Striker','Defender','Bruiser','Sprinter','Grinder','Support','Forward','Anchor','Center','Flanker'];
 let allRows = [];
 let sortCol = 'kkRed';
 let sortDir = -1;
 let filterClass = 'all';
 const cache = {};
 
+// Load saved key
+window.onload = () => {
+  const saved = localStorage.getItem('ga_api_key');
+  if (saved) document.getElementById('apiKey').value = saved;
+  buildClassFilters();
+};
+
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (k) { localStorage.setItem('ga_api_key', k); alert('API Key salva!'); }
+}
+
+function buildClassFilters() {
+  const div = document.getElementById('classFilters');
+  div.innerHTML = '<span style="font-size:10px;color:var(--muted);font-family:Space Mono,monospace;margin-right:4px">CLASSE:</span>';
+  const all = document.createElement('button');
+  all.className = 'filter-btn active';
+  all.textContent = 'Todos';
+  all.onclick = () => setClassFilter('all', all);
+  div.appendChild(all);
+  CLASSES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = c;
+    btn.onclick = () => setClassFilter(c, btn);
+    div.appendChild(btn);
+  });
+}
+
+function setClassFilter(cls, btn) {
+  filterClass = cls;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
 function getApiKey() { return document.getElementById('apiKey').value.trim(); }
 function getContestId() { return document.getElementById('contestId').value.trim(); }
 
 function setStatus(msg, state='loading') {
-  document.getElementById('statusBar').style.display = 'flex';
+  const bar = document.getElementById('statusBar');
+  bar.style.display = 'flex';
   document.getElementById('statusDot').className = 'dot ' + state;
   document.getElementById('statusText').textContent = msg;
 }
@@ -175,7 +251,7 @@ function setProgress(pct, msg) {
 function updateRate(headers) {
   const rem = headers.get('X-RateLimit-Remaining');
   const lim = headers.get('X-RateLimit-Limit');
-  if (rem && lim) document.getElementById('rateInfo').textContent = `Rate: ${rem}/${lim} restantes`;
+  if (rem && lim) document.getElementById('rateInfo').textContent = `Rate: ${rem}/${lim}`;
 }
 
 async function apiGet(path) {
@@ -190,13 +266,13 @@ async function apiGet(path) {
   return data;
 }
 
-async function fetchAllPages(basePath, pageParam='page') {
+async function fetchAllPages(basePath) {
   const all = [];
   let page = 1;
   let total = Infinity;
   while (all.length < total) {
     const sep = basePath.includes('?') ? '&' : '?';
-    const data = await apiGet(`${basePath}${sep}limit=100&${pageParam}=${page}`);
+    const data = await apiGet(`${basePath}${sep}limit=100&page=${page}`);
     const items = data.data || [];
     all.push(...items);
     total = data.pagination?.total ?? all.length;
@@ -216,56 +292,72 @@ async function loadData() {
 
   document.getElementById('loadBtn').disabled = true;
   document.getElementById('tableWrap').style.display = 'none';
-  document.getElementById('filtersBar').style.display = 'none';
+  document.getElementById('filtersSection').style.display = 'none';
   document.getElementById('summaryBar').style.display = 'none';
   document.getElementById('emptyMsg').style.display = 'none';
   Object.keys(cache).forEach(k => delete cache[k]);
   allRows = [];
 
   try {
-    // STEP 1: Get contest info for matchDate
-    setStatus('Buscando informações do contest...', 'loading');
-    setProgress(5, 'Buscando contest...');
+    // STEP 1: Contest info
+    setStatus('Buscando contest...', 'loading');
+    setProgress(5, 'Buscando informações do contest...');
     const contestData = await apiGet(`/contests/${contestId}`);
     let matchDate = new Date().toISOString().split('T')[0];
     if (contestData.startDate) matchDate = contestData.startDate.split('T')[0];
     else if (contestData.data?.startDate) matchDate = contestData.data.startDate.split('T')[0];
 
-    // STEP 2: Get all champions with stats (paginated, max 100/page)
-    setStatus('Buscando champions com stats...', 'loading');
-    setProgress(10, 'Buscando champions (paginado)...');
+    // STEP 2: All champions with stats
+    setStatus('Buscando champions...', 'loading');
+    setProgress(10, 'Buscando 240 champions com stats...');
     const champList = await fetchAllPages('/mokis?isChampion=true');
-    const champMap = {};
-    champList.forEach(c => { champMap[c.mokiTokenId] = c; });
-    setProgress(20, `${champList.length} champions encontrados`);
+    const champMap = {}; // by mokiTokenId
+    const champMapById = {}; // by mokiId
+    champList.forEach(c => {
+      champMap[c.mokiTokenId] = c;
+      champMapById[c.id] = c;
+    });
+    setProgress(20, `${champList.length} champions carregados`);
 
-    // STEP 3: Get all matches (paginated, max 100/page)
-    setStatus('Buscando matchups do contest...', 'loading');
-    setProgress(25, `Buscando partidas (data: ${matchDate})...`);
+    // STEP 3: All matches
+    setStatus('Buscando partidas...', 'loading');
+    setProgress(25, 'Buscando partidas do contest...');
     const matches = await fetchAllPages(`/contests/${contestId}/matches?matchDate=${matchDate}`);
-    setProgress(45, `${matches.length} partidas encontradas`);
+    setProgress(42, `${matches.length} partidas carregadas`);
 
-    // STEP 4: Collect unique support moki IDs
+    // STEP 4: Collect unique support IDs and IDs needing stats (Generalistas + Grinders)
     setStatus('Identificando suportes...', 'loading');
-    setProgress(47, 'Coletando IDs dos suportes...');
+    setProgress(44, 'Coletando IDs...');
     const supportIds = new Set();
+    const needsStatsIds = new Set(); // Generalistas + Grinders
+    const GENERALISTAS = ['Forward','Anchor','Center','Flanker'];
+
     matches.forEach(m => {
       m.players.forEach(p => {
-        if (!champMap[p.mokiTokenId]) supportIds.add(p.mokiId);
+        if (!champMap[p.mokiTokenId]) {
+          supportIds.add(p.mokiId);
+          if (GENERALISTAS.includes(p.class) || p.class === 'Grinder') {
+            needsStatsIds.add(p.mokiId);
+          }
+        } else {
+          // Champion generalistas/grinders also need stats
+          if (GENERALISTAS.includes(p.class) || p.class === 'Grinder') {
+            needsStatsIds.add(p.mokiId);
+          }
+        }
       });
     });
 
-    // STEP 5: Fetch support stats in bulk batches of 50
+    // STEP 5: Fetch support stats in bulk
     const supportIdArr = Array.from(supportIds);
-    const supportMap = {};
+    const supportMap = {}; // by mokiId
     const batchSize = 50;
     const batches = Math.ceil(supportIdArr.length / batchSize);
-
     for (let i = 0; i < batches; i++) {
       const batch = supportIdArr.slice(i * batchSize, (i + 1) * batchSize);
-      const pct = 47 + Math.round((i / batches) * 33);
-      setStatus(`Buscando stats suportes: lote ${i+1}/${batches}...`, 'loading');
-      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches} (${batch.length} mokis)...`);
+      const pct = 44 + Math.round((i / batches) * 25);
+      setStatus(`Buscando suportes: lote ${i+1}/${batches}...`, 'loading');
+      setProgress(pct, `Bulk suportes: lote ${i+1}/${batches}...`);
       try {
         const bulkData = await apiGet(`/mokis/bulk?ids=${batch.join(',')}`);
         bulkData.data.forEach(m => { supportMap[m.id] = m; });
@@ -273,22 +365,61 @@ async function loadData() {
       if (i < batches - 1) await sleep(250);
     }
 
-    // STEP 6: Build champion match index
+    // STEP 6: Fetch stats for Generalistas + Grinders
+    const statsMap = {}; // by mokiId -> { avgEliminations }
+    const needsStatsArr = Array.from(needsStatsIds);
+    const statsBatches = Math.ceil(needsStatsArr.length / 10); // 10 at a time with breathing room
+    for (let i = 0; i < needsStatsArr.length; i++) {
+      const id = needsStatsArr[i];
+      const pct = 70 + Math.round((i / needsStatsArr.length) * 15);
+      if (i % 20 === 0) {
+        setStatus(`Buscando stats generalistas/grinders: ${i+1}/${needsStatsArr.length}...`, 'loading');
+        setProgress(pct, `Stats: ${i+1}/${needsStatsArr.length}...`);
+      }
+      try {
+        const statsData = await apiGet(`/mokis/${id}/stats`);
+        if (statsData.data) statsMap[id] = statsData.data;
+      } catch(e) { console.warn('Stats error:', e); }
+      await sleep(100); // breathing room for heavy endpoint
+    }
+
+    // STEP 7: Build champion match index
     setStatus('Analisando partidas...', 'loading');
-    setProgress(82, 'Cruzando dados...');
+    setProgress(86, 'Cruzando dados e classificando...');
+
     const champMatches = {};
     matches.forEach(m => {
       m.players.forEach(p => {
         if (champMap[p.mokiTokenId]) {
           if (!champMatches[p.mokiTokenId]) champMatches[p.mokiTokenId] = [];
-          champMatches[p.mokiTokenId].push({ match: m, champSide: p.team });
+          champMatches[p.mokiTokenId].push({ match: m, champSide: p.team, champTokenId: p.mokiTokenId, champId: p.mokiId });
         }
       });
     });
 
-    // STEP 7: Analyze each champion
+    // STEP 8: Analyze each champion
     setProgress(90, 'Calculando scores...');
     allRows = [];
+
+    const getMokiData = (p) => {
+      if (champMap[p.mokiTokenId]) return champMap[p.mokiTokenId];
+      return supportMap[p.mokiId];
+    };
+
+    const getStats = (p) => {
+      const data = getMokiData(p);
+      return data?.gameStats?.stats;
+    };
+
+    const getAvgKills = (p) => {
+      // For champion themselves
+      if (champMap[p.mokiTokenId]) {
+        const id = champMapById[Object.values(champMapById).find(c => c.mokiTokenId === p.mokiTokenId)?.id]?.id || p.mokiId;
+        if (statsMap[p.mokiId]) return statsMap[p.mokiId].avgEliminations || 0;
+      }
+      if (statsMap[p.mokiId]) return statsMap[p.mokiId].avgEliminations || 0;
+      return 0;
+    };
 
     for (const [champTokenId, matchList] of Object.entries(champMatches)) {
       const champ = champMap[parseInt(champTokenId)];
@@ -297,31 +428,36 @@ async function loadData() {
       let gBlue=0, kBlue=0, gRed=0, kRed=0;
       let ggBlue=0, kkBlue=0, ggRed=0, kkRed=0;
 
-      matchList.forEach(({ match, champSide }) => {
-        const allies = match.players.filter(p => p.team === champSide);
+      matchList.forEach(({ match, champSide, champTokenId: cTokenId, champId }) => {
+        // Allies = teammates excluding the champion itself
+        const allies = match.players.filter(p => p.team === champSide && p.mokiTokenId !== parseInt(cTokenId));
         const enemies = match.players.filter(p => p.team !== champSide);
 
-        const getMokiStats = (p) => {
-          if (champMap[p.mokiTokenId]) return champMap[p.mokiTokenId]?.gameStats?.stats;
-          return supportMap[p.mokiId]?.gameStats?.stats;
-        };
+        // Find ally champion (the champion we're analyzing is cTokenId)
+        // allies are the 2 supporters
+        const champData = champ;
+        const champClass = champData.gameStats?.class;
+        const champStats = champData.gameStats?.stats;
 
-        const classifyPlayer = (p, team) => classify(p.class, getMokiStats(p), team, p, champMap, supportMap);
+        // Find enemy champion
+        const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
+        const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const allyC = allies.map(p => classifyPlayer(p, allies));
-        const enemyC = enemies.map(p => classifyPlayer(p, enemies));
+        // Classify allies (2 supporters)
+        const { killers: allyK, gachas: allyG } = classifyTeam(allies, champClass, champStats, enemyChampClass, getMokiData, getStats, getAvgKills, statsMap, champMap, supportMap);
 
-        const aK = allyC.filter(c => c==='K').length;
-        const aG = allyC.filter(c => c==='G').length;
-        const eK = enemyC.filter(c => c==='K').length;
-        const eG = enemyC.filter(c => c==='G').length;
+        // Classify enemies (3 mokis including enemy champion)
+        const { killers: enemyK, gachas: enemyG } = classifyTeam(enemies, null, null, champClass, getMokiData, getStats, getAvgKills, statsMap, champMap, supportMap, true);
 
-        if (aG > 0) gBlue++;
-        if (aK > 0) kBlue++;
-        if (eG > 0) gRed++;
-        if (eK > 0) kRed++;
-        ggBlue += aG; kkBlue += aK;
-        ggRed += eG; kkRed += eK;
+        if (allyG > 0) gBlue++;
+        if (allyK > 0) kBlue++;
+        if (enemyG > 0) gRed++;
+        if (enemyK > 0) kRed++;
+
+        ggBlue += allyG;
+        kkBlue += allyK;
+        ggRed += enemyG;
+        kkRed += enemyK;
       });
 
       allRows.push({
@@ -337,7 +473,7 @@ async function loadData() {
     setStatus(`✓ ${allRows.length} champions | ${matches.length} partidas`, 'done');
     renderSummary();
     renderTable();
-    document.getElementById('filtersBar').style.display = 'flex';
+    document.getElementById('filtersSection').style.display = 'block';
     document.getElementById('summaryBar').style.display = 'flex';
 
   } catch(e) {
@@ -348,99 +484,153 @@ async function loadData() {
   document.getElementById('loadBtn').disabled = false;
 }
 
-function classify(cls, stats, teammates, self, champMap, supportMap) {
-  const str = stats?.strength?.total || 0;
-  const dex = stats?.dexterity?.total || 0;
-  const def = stats?.defense?.total || 0;
-  const strTrain = stats?.strength?.training || 0;
-  const strTotal = stats?.strength?.total || 1;
+function classifyTeam(players, allyChampClass, allyChampStats, enemyChampClass, getMokiData, getStats, getAvgKills, statsMap, champMap, supportMap, isEnemy = false) {
+  const GENERALISTAS = ['Forward','Anchor','Center','Flanker'];
+  
+  // Find the champion in this group (for enemy team analysis)
+  const teamChamp = players.find(p => champMap[p.mokiTokenId]);
+  const teamChampClass = teamChamp ? champMap[teamChamp.mokiTokenId]?.gameStats?.class : null;
 
-  if (cls === 'Striker') return 'G';
-  if (cls === 'Bruiser') return 'K';
-  if (cls === 'Grinder') return str > dex ? 'K' : 'G';
+  // For enemy team, use their champion class as the "allyChampClass"
+  const effectiveChampClass = isEnemy ? teamChampClass : allyChampClass;
+  // For enemy team, the "enemyChampClass" is the ally champion class
+  const effectiveEnemyChampClass = isEnemy ? allyChampClass : enemyChampClass;
 
-  if (cls === 'Sprinter') {
-    if (dex > def) return 'G';
-    const others = teammates.filter(t => t !== self);
-    const otherSprinters = others.filter(t => t.class === 'Sprinter');
-    if (otherSprinters.length > 0) {
-      const allDefGtDex = otherSprinters.every(t => {
-        const s = champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats;
-        return (s?.defense?.total||0) > (s?.dexterity?.total||0);
-      });
-      if (allDefGtDex) return 'K';
+  // First pass: classify each moki
+  const classified = players.map(p => {
+    const cls = p.class;
+    const stats = getStats(p);
+    const avgKills = getAvgKills(p);
+    const str = stats?.strength?.total || 0;
+    const dex = stats?.dexterity?.total || 0;
+    const def = stats?.defense?.total || 0;
+
+    if (cls === 'Striker') return { p, cls, role: 'G' };
+    if (cls === 'Bruiser') return { p, cls, role: 'K' };
+    if (cls === 'Grinder') {
+      if (avgKills >= 1.4 || str > dex) return { p, cls, role: 'K' };
+      return { p, cls, role: 'G' };
     }
-    const hasDefender = others.some(t => t.class === 'Defender');
-    if (hasDefender && def > dex) return 'K';
-    const gachas = others.filter(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats) === 'G').length;
-    if (gachas >= 2) return 'N';
-    return 'N';
-  }
-
-  if (cls === 'Defender') {
-    const others = teammates.filter(t => t !== self);
-    if (others.some(t => t.class === 'Defender')) return 'K';
-    const sprinters = others.filter(t => t.class === 'Sprinter');
-    if (sprinters.length > 0) {
-      const hasDefSprint = sprinters.some(t => {
-        const s = champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats;
-        return (s?.defense?.total||0) > (s?.dexterity?.total||0);
-      });
-      if (hasDefSprint) return 'K';
+    if (cls === 'Sprinter') {
+      if (dex > def) return { p, cls, role: 'G' };
+      return { p, cls, role: 'SPR_DEF' }; // def > dex sprinter
     }
-    const gachas = others.filter(t => quickClassify(t.class, champMap[t.mokiTokenId]?.gameStats?.stats || supportMap[t.mokiId]?.gameStats?.stats) === 'G').length;
-    if (gachas >= 2) return 'N';
-    return 'N';
-  }
-
-  if (cls === 'Support') {
-    const champPartner = teammates.find(t => t !== self && champMap[t.mokiTokenId]);
-    if (champPartner) {
-      if (champPartner.class === 'Defender') return 'K';
-      if (champPartner.class === 'Striker') return 'G';
+    if (cls === 'Defender') return { p, cls, role: 'DEF' };
+    if (cls === 'Support') return { p, cls, role: 'SUP' };
+    if (GENERALISTAS.includes(cls)) {
+      if (avgKills >= 1.3) return { p, cls, role: 'K' };
+      return { p, cls, role: 'N' };
     }
-    return 'N';
+    return { p, cls, role: 'N' };
+  });
+
+  // Second pass: apply context rules
+  const defCount = classified.filter(c => c.role === 'DEF').length;
+  const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
+  const gachaCount = classified.filter(c => c.role === 'G').length;
+
+  let killers = 0;
+  let gachas = 0;
+  let specialKillerCount = 0; // for Def+Def, Def+Spr, Spr+Spr combos
+
+  // Check special combinations
+  const hasDefDef = defCount >= 2;
+  const hasDefSpr = defCount >= 1 && sprDefCount >= 1;
+  const hasSprSpr = sprDefCount >= 2;
+  const hasSpecialCombo = hasDefDef || hasDefSpr || hasSprSpr;
+
+  // Check if ally champion is Gacha class
+  const champIsGacha = ['Striker'].includes(effectiveChampClass) ||
+    (effectiveChampClass === 'Sprinter'); // simplified
+
+  // Check if enemy champion is Defender
+  const enemyChampIsDefender = effectiveEnemyChampClass === 'Defender';
+
+  classified.forEach(({ p, cls, role }) => {
+    if (role === 'G') {
+      gachas++;
+      return;
+    }
+    if (role === 'K') {
+      killers++;
+      return;
+    }
+    if (role === 'DEF') {
+      if (hasDefDef || hasDefSpr) {
+        // part of special combo - handled below
+        return;
+      }
+      // Defender aliado quando champion aliado é Gacha E champion inimigo é Defender
+      if (!isEnemy && champIsGacha && enemyChampIsDefender) {
+        // count as killer but via special combo logic
+        return;
+      }
+      // Defender alone: check if paired with 2 gachas and enemy champ is gacha
+      if (gachaCount >= 2 && !enemyChampIsDefender) {
+        // Neutro
+        return;
+      }
+      // Default neutro
+      return;
+    }
+    if (role === 'SPR_DEF') {
+      if (hasDefSpr || hasSprSpr) {
+        // part of special combo
+        return;
+      }
+      // Sprinter def>dex alone: check context
+      if (gachaCount >= 2) return; // neutro
+      return; // neutro
+    }
+    if (role === 'SUP') {
+      // Support with ally champion Defender -> K (binary only, not total)
+      if (effectiveChampClass === 'Defender') {
+        killers++; // binary killer - but we'll handle total separately
+        return;
+      }
+      // Support with ally champion Striker -> G
+      if (effectiveChampClass === 'Striker') {
+        gachas++;
+        return;
+      }
+      // Neutro
+      return;
+    }
+    // N = neutro
+  });
+
+  // Handle special combos (Def+Def, Def+Spr, Spr+Spr) = 1 killer
+  if (hasSpecialCombo) {
+    killers++; // count as 1 killer
   }
 
-  const generalistas = ['Forward','Anchor','Center','Flanker'];
-  if (generalistas.includes(cls)) {
-    const strRatio = strTrain / strTotal;
-    if (strRatio >= 0.2 && str > dex) return 'K';
-    return 'N';
+  // Handle Defender aliado rule (champion ally is Gacha + enemy champ is Defender)
+  if (!isEnemy && !hasSpecialCombo && defCount === 1 && champIsGacha && enemyChampIsDefender) {
+    killers++; // 1 killer
   }
 
-  return 'N';
+  // Handle enemy champion Defender: check if Support counted as killer (binary only)
+  // For total: support doesn't count in total killer count
+  // This is handled by the Support logic above (it adds to killers for binary)
+  // For total we need to subtract support killers
+  // We track this separately
+
+  return { killers, gachas };
 }
 
-function quickClassify(cls, stats) {
-  if (cls === 'Striker') return 'G';
-  if (cls === 'Bruiser') return 'K';
-  const dex = stats?.dexterity?.total || 0;
-  const str = stats?.strength?.total || 0;
-  const def = stats?.defense?.total || 0;
-  if (cls === 'Grinder') return str > dex ? 'K' : 'G';
-  if (cls === 'Sprinter') return dex > def ? 'G' : 'N';
-  return 'N';
-}
-
-function setFilter(cls, btn) {
-  filterClass = cls;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable();
-}
+function applyFilters() { renderTable(); }
 
 function sortBy(col) {
   if (sortCol === col) sortDir *= -1;
   else { sortCol = col; sortDir = -1; }
-  const cols = ['name','class','gBlue','kBlue','gRed','kRed','ggBlue','kkBlue','ggRed','kkRed'];
+  const cols = ['name','class','gBlue','kBlue','gRed','kRed','ggBlue','kkBlue','ggRed','kkRed','matches'];
   document.querySelectorAll('th').forEach((th, i) => {
     th.classList.remove('sorted');
-    const a = th.querySelector('.sort-arrow');
-    if (a) a.textContent = '';
+    const s = th.querySelector('span');
+    if (s) s.textContent = '';
     if (cols[i] === col) {
       th.classList.add('sorted');
-      if (a) a.textContent = sortDir === -1 ? ' ↓' : ' ↑';
+      if (s) s.textContent = sortDir === -1 ? '↓' : '↑';
     }
   });
   renderTable();
@@ -448,21 +638,51 @@ function sortBy(col) {
 
 function renderTable() {
   let rows = [...allRows];
+
+  // Class filter
   if (filterClass !== 'all') rows = rows.filter(r => r.class === filterClass);
+
+  // Min filters
+  const filters = {
+    gBlue: parseInt(document.getElementById('f-gBlue').value) || 0,
+    kBlue: parseInt(document.getElementById('f-kBlue').value) || 0,
+    gRed: parseInt(document.getElementById('f-gRed').value) || 0,
+    kRed: parseInt(document.getElementById('f-kRed').value) || 0,
+    ggBlue: parseInt(document.getElementById('f-ggBlue').value) || 0,
+    kkBlue: parseInt(document.getElementById('f-kkBlue').value) || 0,
+    ggRed: parseInt(document.getElementById('f-ggRed').value) || 0,
+    kkRed: parseInt(document.getElementById('f-kkRed').value) || 0,
+  };
+
+  rows = rows.filter(r =>
+    r.gBlue >= filters.gBlue &&
+    r.kBlue >= filters.kBlue &&
+    r.gRed >= filters.gRed &&
+    r.kRed >= filters.kRed &&
+    r.ggBlue >= filters.ggBlue &&
+    r.kkBlue >= filters.kkBlue &&
+    r.ggRed >= filters.ggRed &&
+    r.kkRed >= filters.kkRed
+  );
+
+  // Sort
   rows.sort((a, b) => {
     const av = a[sortCol]; const bv = b[sortCol];
     if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
     return (av - bv) * sortDir;
   });
+
   if (rows.length === 0) {
     document.getElementById('tableWrap').style.display = 'none';
     document.getElementById('emptyMsg').style.display = 'block';
     return;
   }
+
   document.getElementById('tableWrap').style.display = 'block';
   document.getElementById('emptyMsg').style.display = 'none';
+
   document.getElementById('tableBody').innerHTML = rows.map(r => `
-    <tr>
+    <tr class="${r.matches < 10 ? 'warning' : ''}">
       <td><span class="champion-name">${r.name}</span></td>
       <td><span class="class-badge ${r.class}">${r.class}</span></td>
       <td class="col-group-blue"><span class="num blue ${r.gBlue===0?'zero':''}">${r.gBlue}</span></td>
@@ -473,20 +693,19 @@ function renderTable() {
       <td class="col-group-blue2"><span class="num blue ${r.kkBlue===0?'zero':''}">${r.kkBlue}</span></td>
       <td class="col-group-red"><span class="num red ${r.ggRed===0?'zero':''}">${r.ggRed}</span></td>
       <td class="col-group-red2"><span class="num red ${r.kkRed===0?'zero':''}">${r.kkRed}</span></td>
+      <td><span class="num ${r.matches<10?'':'zero'}" style="color:var(--muted)">${r.matches}</span></td>
     </tr>
   `).join('');
 }
 
 function renderSummary() {
   const total = allRows.length;
-  const totalMatches = allRows.reduce((a,r) => a+r.matches, 0);
-  const avgKKRed = total ? (allRows.reduce((a,r) => a+r.kkRed, 0)/total).toFixed(1) : 0;
-  const avgGGRed = total ? (allRows.reduce((a,r) => a+r.ggRed, 0)/total).toFixed(1) : 0;
+  const totalM = allRows.reduce((a,r) => a+r.matches, 0);
   document.getElementById('summaryBar').innerHTML = `
     <div class="summary-chip">Champions: <span>${total}</span></div>
-    <div class="summary-chip">Partidas: <span>${totalMatches}</span></div>
-    <div class="summary-chip">Média KK🔴: <span>${avgKKRed}</span></div>
-    <div class="summary-chip">Média GG🔴: <span>${avgGGRed}</span></div>
+    <div class="summary-chip">Partidas: <span>${totalM}</span></div>
+    <div class="summary-chip">Média KK🔴: <span>${total?(allRows.reduce((a,r)=>a+r.kkRed,0)/total).toFixed(1):0}</span></div>
+    <div class="summary-chip">Média GG🔴: <span>${total?(allRows.reduce((a,r)=>a+r.ggRed,0)/total).toFixed(1):0}</span></div>
   `;
 }
 </script>
