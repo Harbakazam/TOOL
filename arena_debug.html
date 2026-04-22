@@ -254,49 +254,62 @@ async function loadChamp() {
       if (i < batches - 1) await sleep(250);
     }
 
-    // STEP 7: Carregar leaderboard Season 1 para médias corretas (desde 20/02/2026)
-    // IDs dos leaderboards: Regulars = 6997a23dfe65385c3bd784e8, Champions = 6997a23dfe65385c3bd784e5
-    setStatus('Carregando leaderboard Season 1...', 'loading');
+    // STEP 7: Médias Season 1 — cache localStorage válido por 12h
+    const CACHE_KEY = 'ga_leaderboard_cache';
+    const CACHE_TTL = 12 * 60 * 60 * 1000; // 12h em ms
     const statsMap = {};
 
-    const leaderboardIds = ['6997a23dfe65385c3bd784e8', '6997a23dfe65385c3bd784e5'];
-
-    // Coletar todos os mokiTokenIds que precisamos buscar
-    const allNeededTokenIds = new Set([
-      ...Array.from(needsStatsTokenIds),
-      ...Array.from(supportTokenIds),
-      champTokenId
-    ]);
-
-    // Paginar leaderboards até achar todos ou esgotar páginas
-    for (const lbId of leaderboardIds) {
-      let page = 1;
-      let found = 0;
-      let totalPages = 999;
-
-      while (page <= totalPages) {
-        setStatus(`Leaderboard ${lbId === '6997a23dfe65385c3bd784e8' ? 'Regulars' : 'Champions'}: página ${page}...`, 'loading');
-        try {
-          const lbData = await apiGet(`/leaderboards/${lbId}/scores?limit=100&page=${page}`);
-          totalPages = lbData.pagination?.pages || 1;
-          (lbData.data || []).forEach(entry => {
-            const tid = entry.mokiTokenId;
-            const mm = entry.scoreDetail?.mokiMayhem;
-            if (mm) {
-              statsMap[tid] = {
-                avgEliminations: mm.avgEliminations || 0,
-                avgDeposits: mm.avgDeposits || 0,
-                avgWartDistance: mm.avgWartDistance || 0
-              };
-              if (allNeededTokenIds.has(tid)) found++;
-            }
-          });
-        } catch(e) { console.warn('Leaderboard page error:', e); }
-        // Parar se já achamos todos os que precisamos
-        if (found >= allNeededTokenIds.size) break;
-        page++;
-        await sleep(150);
+    // Tentar carregar do cache
+    let cacheLoaded = false;
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { timestamp, data } = JSON.parse(raw);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          Object.assign(statsMap, data);
+          cacheLoaded = true;
+          setStatus('✓ Médias carregadas do cache (Season 1)', 'done');
+        }
       }
+    } catch(e) { console.warn('Cache read error:', e); }
+
+    if (!cacheLoaded) {
+      setStatus('Carregando leaderboard Season 1 (primeira vez, aguarde)...', 'loading');
+      const leaderboardIds = ['6997a23dfe65385c3bd784e8', '6997a23dfe65385c3bd784e5'];
+
+      const processLbEntry = (entry) => {
+        const tid = entry.mokiTokenId;
+        const mm = entry.scoreDetail?.mokiMayhem;
+        if (mm) {
+          statsMap[tid] = {
+            avgEliminations: mm.avgEliminations || 0,
+            avgDeposits: mm.avgDeposits || 0,
+            avgWartDistance: mm.avgWartDistance || 0
+          };
+        }
+      };
+
+      for (const lbId of leaderboardIds) {
+        const lbName = lbId === '6997a23dfe65385c3bd784e8' ? 'Regulars' : 'Champions';
+        let page = 1;
+        let totalPages = 999;
+        while (page <= totalPages) {
+          setStatus(`${lbName}: página ${page}${totalPages < 999 ? ' de ' + totalPages : ''}...`, 'loading');
+          try {
+            const data = await apiGet(`/leaderboards/${lbId}/scores?limit=100&page=${page}`);
+            totalPages = data.pagination?.pages || 1;
+            (data.data || []).forEach(processLbEntry);
+          } catch(e) { console.warn(`LB page ${page} error:`, e); }
+          page++;
+          await sleep(100);
+        }
+      }
+
+      // Salvar no localStorage
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: statsMap }));
+        setStatus('✓ Leaderboard carregado e salvo no cache', 'done');
+      } catch(e) { console.warn('Cache write error:', e); }
     }
 
     // Helpers — always use gameStats.class, never p.class from matchup
