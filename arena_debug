@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Arena — Debug</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+  :root {
+    --bg: #0d0d14;
+    --surface: #16161f;
+    --surface2: #1e1e2a;
+    --border: #2e2e42;
+    --accent: #00ff88;
+    --blue: #5599ff;
+    --red: #ff5577;
+    --text: #ffffff;
+    --muted: #8888aa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; padding: 1.5rem; }
+  .header { margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  .logo { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .subtitle { font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 4px; }
+
+  .setup { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+  .field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-family: 'Space Mono', monospace; }
+  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--accent); }
+  .btn { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 10px 22px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; margin-bottom: 0.75rem; font-family: 'Space Mono', monospace; font-size: 13px; color: var(--muted); display: none; align-items: center; gap: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+  .dot.done { background: var(--accent); }
+  .dot.error { background: #ff4466; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .rate-info { margin-left: auto; font-size: 11px; }
+
+  /* SCORE SUMMARY */
+  .score-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; display: none; }
+  .score-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
+  .score-col { text-align: center; }
+  .score-col-title { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 0.5rem; }
+  .score-num { font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700; }
+  .score-num.blue { color: var(--blue); }
+  .score-num.red { color: var(--red); }
+  .score-divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+  .score-totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+  /* MATCH CARDS */
+  .matches-title { font-size: 13px; font-weight: 700; color: var(--muted); font-family: 'Space Mono', monospace; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+  .match-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; }
+  .match-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .match-num { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+  .match-score { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+  .match-teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: start; }
+  .match-vs { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); text-align: center; padding-top: 12px; }
+  .team { display: flex; flex-direction: column; gap: 0.5rem; }
+  .team.enemy { align-items: flex-end; }
+  .moki-row { display: flex; align-items: center; gap: 0.5rem; }
+  .moki-row.enemy { flex-direction: row-reverse; }
+  .moki-row.is-champ { background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2); border-radius: 8px; padding: 2px 6px; }
+  .moki-img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--border); flex-shrink: 0; }
+  .moki-info { display: flex; flex-direction: column; gap: 3px; }
+  .moki-info.enemy { align-items: flex-end; }
+  .moki-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .moki-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .moki-meta.enemy { justify-content: flex-end; }
+  .moki-avg { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+  .class-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; }
+  .class-badge.Bruiser { background: rgba(255,102,68,0.2); color: #ff7755; border: 1px solid rgba(255,102,68,0.4); }
+  .class-badge.Striker { background: rgba(68,170,255,0.2); color: #55aaff; border: 1px solid rgba(68,170,255,0.4); }
+  .class-badge.Defender { background: rgba(100,200,100,0.2); color: #77dd77; border: 1px solid rgba(100,200,100,0.4); }
+  .class-badge.Sprinter { background: rgba(255,200,50,0.2); color: #ffcc44; border: 1px solid rgba(255,200,50,0.4); }
+  .class-badge.Grinder { background: rgba(180,100,255,0.2); color: #cc77ff; border: 1px solid rgba(180,100,255,0.4); }
+  .class-badge.Support { background: rgba(255,180,50,0.2); color: #ffbb44; border: 1px solid rgba(255,180,50,0.4); }
+  .class-badge.Forward,.class-badge.Anchor,.class-badge.Center,.class-badge.Flanker { background: rgba(180,180,220,0.15); color: #bbbbdd; border: 1px solid rgba(180,180,220,0.3); }
+  .role-badge { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 3px; }
+  .role-K { background: rgba(255,85,119,0.2); color: #ff5577; border: 1px solid rgba(255,85,119,0.4); }
+  .role-B { background: rgba(85,153,255,0.2); color: #5599ff; border: 1px solid rgba(85,153,255,0.4); }
+  .role-N { background: rgba(136,136,170,0.1); color: var(--muted); border: 1px solid var(--border); }
+  .champ-label { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">debug</span></div>
+  <div class="subtitle">Analisa um champion específico por Token ID — para auditoria e teste de lógica</div>
+</div>
+
+<div class="setup">
+  <div class="field">
+    <label>API Key</label>
+    <input type="password" id="apiKey" placeholder="ga_xxxxxxxxxxxxxxxx" />
+  </div>
+  <div class="field">
+    <label>Contest ID</label>
+    <input type="text" id="contestId" placeholder="69e74dfafa85f1b83c7ca0e1" />
+  </div>
+  <div class="field">
+    <label>Champion Token ID</label>
+    <input type="text" id="champTokenId" placeholder="ex: 1176" />
+  </div>
+  <button class="btn" id="loadBtn" onclick="loadChamp()">Analisar</button>
+</div>
+
+<div id="statusBar" class="status-bar">
+  <div class="dot" id="statusDot"></div>
+  <span id="statusText"></span>
+  <span class="rate-info" id="rateInfo"></span>
+</div>
+
+<div id="scoreSummary" class="score-summary"></div>
+<div id="matchesWrap"></div>
+
+<script>
+const PROXY = 'https://toolproxy.aikazamage.workers.dev';
+const GENERALISTAS = ['Forward','Anchor','Center','Flanker'];
+const cache = {};
+
+window.onload = () => {
+  const saved = localStorage.getItem('ga_api_key');
+  if (saved) document.getElementById('apiKey').value = saved;
+};
+
+function getApiKey() { return document.getElementById('apiKey').value.trim(); }
+function getContestId() { return document.getElementById('contestId').value.trim(); }
+function getChampTokenId() { return parseInt(document.getElementById('champTokenId').value.trim()); }
+
+function setStatus(msg, state='loading') {
+  document.getElementById('statusBar').style.display = 'flex';
+  document.getElementById('statusDot').className = 'dot ' + state;
+  document.getElementById('statusText').textContent = msg;
+}
+
+function updateRate(headers) {
+  const rem = headers.get('X-RateLimit-Remaining');
+  const lim = headers.get('X-RateLimit-Limit');
+  if (rem && lim) document.getElementById('rateInfo').textContent = `Rate: ${rem}/${lim}`;
+}
+
+async function apiGet(path) {
+  if (cache[path]) return cache[path];
+  const res = await fetch(`${PROXY}?url=${encodeURIComponent(path)}`, {
+    headers: { 'x-api-key': getApiKey() }
+  });
+  updateRate(res.headers);
+  if (!res.ok) throw new Error(`HTTP ${res.status} em ${path}`);
+  const data = await res.json();
+  cache[path] = data;
+  return data;
+}
+
+async function fetchAllPages(basePath) {
+  const all = [];
+  let page = 1;
+  let total = Infinity;
+  while (all.length < total) {
+    const sep = basePath.includes('?') ? '&' : '?';
+    const data = await apiGet(`${basePath}${sep}limit=100&page=${page}`);
+    const items = data.data || [];
+    all.push(...items);
+    total = data.pagination?.total ?? all.length;
+    if (items.length < 100) break;
+    page++;
+    if (page > 1) await sleep(200);
+  }
+  return all;
+}
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function loadChamp() {
+  const apiKey = getApiKey();
+  const contestId = getContestId();
+  const champTokenId = getChampTokenId();
+
+  if (!apiKey || !contestId || !champTokenId) {
+    alert('Preencha todos os campos!');
+    return;
+  }
+
+  document.getElementById('loadBtn').disabled = true;
+  document.getElementById('scoreSummary').style.display = 'none';
+  document.getElementById('matchesWrap').innerHTML = '';
+  Object.keys(cache).forEach(k => delete cache[k]);
+
+  try {
+    // STEP 1: Contest info
+    setStatus('Buscando contest...', 'loading');
+    const contestData = await apiGet(`/contests/${contestId}`);
+    const contestInfo = contestData.data || contestData;
+    const matchDate = contestInfo.startDate.split('T')[0];
+
+    // STEP 2: Champion data
+    setStatus('Buscando champion...', 'loading');
+    const champData = await apiGet(`/mokis/${champTokenId}`);
+    const champ = champData.data;
+    if (!champ) throw new Error('Champion não encontrado!');
+    if (!champ.isChampion) throw new Error('Este Moki não é um champion!');
+
+    // STEP 3: All champions (to identify who is champion in matches)
+    setStatus('Buscando lista de champions...', 'loading');
+    const champList = await fetchAllPages('/mokis?isChampion=true');
+    const champMap = {};
+    champList.forEach(c => { champMap[c.mokiTokenId] = c; });
+
+    // STEP 4: Matches for this contest
+    setStatus('Buscando partidas...', 'loading');
+    const matches = await fetchAllPages(`/contests/${contestId}/matches?matchDate=${matchDate}`);
+
+    // Filter matches where this champion plays
+    const champMatches = matches.filter(m =>
+      m.players.some(p => p.mokiTokenId === champTokenId)
+    );
+
+    if (champMatches.length === 0) throw new Error('Nenhuma partida encontrada para este champion neste contest!');
+
+    // STEP 5: Collect unique support token IDs from champion's matches
+    setStatus('Identificando suportes...', 'loading');
+    const supportTokenIds = new Set();
+    const needsStatsTokenIds = new Set();
+
+    champMatches.forEach(m => {
+      m.players.forEach(p => {
+        if (!champMap[p.mokiTokenId]) {
+          supportTokenIds.add(p.mokiTokenId);
+        }
+        if (GENERALISTAS.includes(p.class) || p.class === 'Grinder') {
+          needsStatsTokenIds.add(p.mokiTokenId);
+        }
+      });
+    });
+
+    // STEP 6: Bulk fetch supports (mokiTokenId numbers, batch 50)
+    const supportTokenArr = Array.from(supportTokenIds);
+    const supportMap = {};
+    const batchSize = 50;
+    const batches = Math.ceil(supportTokenArr.length / batchSize);
+
+    for (let i = 0; i < batches; i++) {
+      const batch = supportTokenArr.slice(i * batchSize, (i + 1) * batchSize);
+      setStatus(`Buscando suportes: lote ${i+1}/${batches}...`, 'loading');
+      try {
+        const bulkData = await apiGet(`/mokis/bulk?ids=${batch.join(',')}`);
+        bulkData.data.forEach(m => { supportMap[m.mokiTokenId] = m; });
+      } catch(e) { console.warn('Bulk error:', e); }
+      if (i < batches - 1) await sleep(250);
+    }
+
+    // STEP 7: Fetch /stats for Generalistas + Grinders (mokiTokenId, 100ms breathing room)
+    const needsStatsArr = Array.from(needsStatsTokenIds);
+    const statsMap = {};
+
+    for (let i = 0; i < needsStatsArr.length; i++) {
+      const tokenId = needsStatsArr[i];
+      if (i % 10 === 0) setStatus(`Stats: ${i+1}/${needsStatsArr.length}...`, 'loading');
+      try {
+        const statsData = await apiGet(`/mokis/${tokenId}/stats`);
+        if (statsData.data) {
+          statsMap[tokenId] = {
+            avgEliminations: statsData.data.avgEliminations || 0,
+            avgDeposits: statsData.data.avgDeposits || 0,
+            avgWartDistance: statsData.data.avgWartDistance || 0
+          };
+        }
+      } catch(e) { statsMap[tokenId] = { avgEliminations: 0, avgDeposits: 0, avgWartDistance: 0 }; }
+      await sleep(100);
+    }
+
+    // Helpers — always use gameStats.class, never p.class from matchup
+    const getMoki = (tokenId) => champMap[tokenId] || supportMap[tokenId] || null;
+    const getMokiClass = (p) => {
+      const moki = getMoki(p.mokiTokenId);
+      return moki?.gameStats?.class || p.class; // fallback to matchup class
+    };
+    const getStats = (tokenId) => getMoki(tokenId)?.gameStats?.stats || null;
+    const getAvgKills = (tokenId) => statsMap[tokenId]?.avgEliminations || 0;
+    const getAvgData = (tokenId) => statsMap[tokenId] || null;
+
+    // STEP 8: Analyze matches
+    setStatus('Calculando...', 'loading');
+
+    let gBlue=0, kBlue=0, gRed=0, kRed=0;
+    let ggBlue=0, kkBlue=0, ggRed=0, kkRed=0;
+    const detailedMatches = [];
+
+    champMatches.forEach((match, matchIdx) => {
+      const champPlayer = match.players.find(p => p.mokiTokenId === champTokenId);
+      const champSide = champPlayer.team;
+
+      const allies = match.players.filter(p => p.team === champSide && p.mokiTokenId !== champTokenId);
+      const enemies = match.players.filter(p => p.team !== champSide);
+
+      const champClass = champ.gameStats?.class;
+      const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
+      const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
+
+      const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false);
+      const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true);
+
+      if (allyResult.binGachas > 0) gBlue++;
+      if (allyResult.binKillers > 0) kBlue++;
+      if (enemyResult.binGachas > 0) gRed++;
+      if (enemyResult.binKillers > 0) kRed++;
+
+      ggBlue += allyResult.totalGachas;
+      kkBlue += allyResult.totalKillers;
+      ggRed += enemyResult.totalGachas;
+      kkRed += enemyResult.totalKillers;
+
+      const buildDetail = (p, role) => {
+        const avg = getAvgData(p.mokiTokenId);
+        const realClass = getMokiClass(p);
+        return {
+          tokenId: p.mokiTokenId,
+          name: p.name,
+          cls: realClass,
+          imageUrl: p.imageUrl,
+          role,
+          isChamp: !!champMap[p.mokiTokenId],
+          avgKills: avg?.avgEliminations ?? null,
+          avgDeposits: avg?.avgDeposits ?? null,
+          avgWart: avg?.avgWartDistance ?? null
+        };
+      };
+
+      detailedMatches.push({
+        matchIdx: matchIdx + 1,
+        allies: allies.map((p, i) => buildDetail(p, allyResult.roles[i])),
+        enemies: enemies.map((p, i) => buildDetail(p, enemyResult.roles[i])),
+        allyB: allyResult.totalGachas,
+        allyK: allyResult.totalKillers,
+        enemyB: enemyResult.totalGachas,
+        enemyK: enemyResult.totalKillers
+      });
+    });
+
+    setStatus(`✓ ${champ.name} (${champ.gameStats?.class}) — ${champMatches.length} partidas`, 'done');
+    renderSummary(champ, gBlue, kBlue, gRed, kRed, ggBlue, kkBlue, ggRed, kkRed, champMatches.length);
+    renderMatches(detailedMatches);
+
+  } catch(e) {
+    setStatus('Erro: ' + e.message, 'error');
+    console.error(e);
+  }
+
+  document.getElementById('loadBtn').disabled = false;
+}
+
+function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam) {
+  const isGachaChamp = (cls) => cls === 'Striker';
+  const isDefenderChamp = (cls) => cls === 'Defender';
+
+  const classified = players.map(p => {
+    const tokenId = p.mokiTokenId;
+    const cls = getMokiClass(p); // always use real class from gameStats
+    const stats = getStats(tokenId);
+    const str = stats?.strength?.total || 0;
+    const dex = stats?.dexterity?.total || 0;
+    const def = stats?.defense?.total || 0;
+    const avgKills = getAvgKills(tokenId);
+
+    let role;
+    switch(cls) {
+      case 'Striker': role = 'B'; break;
+      case 'Bruiser': role = 'K'; break;
+      case 'Grinder': role = (avgKills >= 1.4 || str > dex) ? 'K' : 'B'; break;
+      case 'Sprinter': role = dex > def ? 'B' : 'SPR_DEF'; break;
+      case 'Defender': role = 'DEF'; break;
+      case 'Support': role = 'SUP'; break;
+      default: role = avgKills >= 1.3 ? 'K' : 'N';
+    }
+    return { tokenId, cls, role, str, dex, def, avgKills };
+  });
+
+  const defCount = classified.filter(c => c.role === 'DEF').length;
+  const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
+  const hasDefDef = defCount >= 2;
+  const hasDefSpr = defCount >= 1 && sprDefCount >= 1;
+  const hasSprSpr = sprDefCount >= 2;
+  const hasSpecialCombo = hasDefDef || hasDefSpr || hasSprSpr;
+
+  const finalRoles = classified.map(c => {
+    if (c.role === 'B' || c.role === 'K' || c.role === 'N') return c.role;
+    if (c.role === 'DEF') {
+      if (hasSpecialCombo) return 'K';
+      if (!isEnemyTeam && isGachaChamp(myChampClass) && isDefenderChamp(enemyChampClass)) return 'K';
+      return 'N';
+    }
+    if (c.role === 'SPR_DEF') {
+      if (hasSpecialCombo) return 'K';
+      return 'N';
+    }
+    if (c.role === 'SUP') {
+      if (isDefenderChamp(myChampClass)) return 'K';
+      if (isGachaChamp(myChampClass)) return 'B';
+      return 'N';
+    }
+    return 'N';
+  });
+
+  let totalKillers = 0;
+  let totalGachas = 0;
+  let comboUsed = false;
+
+  finalRoles.forEach((role, i) => {
+    const origRole = classified[i].role;
+    if (role === 'B') {
+      totalGachas++;
+    } else if (role === 'K') {
+      if (origRole === 'SUP' && isDefenderChamp(myChampClass)) {
+        // binary only, not total
+      } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
+        if (!comboUsed) { totalKillers++; comboUsed = true; }
+      } else {
+        totalKillers++;
+      }
+    }
+  });
+
+  const binKillers = finalRoles.some(r => r === 'K') ? 1 : 0;
+  const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
+
+  return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles };
+}
+
+function renderSummary(champ, gBlue, kBlue, gRed, kRed, ggBlue, kkBlue, ggRed, kkRed, total) {
+  const el = document.getElementById('scoreSummary');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="score-title">${champ.name} — <span style="color:var(--muted)">${champ.gameStats?.class}</span> — ${total} partidas</div>
+    <div style="font-family:Space Mono,monospace;font-size:11px;color:var(--muted);margin-bottom:0.75rem">BINÁRIO</div>
+    <div class="score-grid">
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--blue)">B🔵</div>
+        <div class="score-num blue">${gBlue}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--blue)">K🔵</div>
+        <div class="score-num blue">${kBlue}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--red)">B🔴</div>
+        <div class="score-num red">${gRed}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--red)">K🔴</div>
+        <div class="score-num red">${kRed}</div>
+      </div>
+    </div>
+    <hr class="score-divider">
+    <div style="font-family:Space Mono,monospace;font-size:11px;color:var(--muted);margin-bottom:0.75rem">TOTAL</div>
+    <div class="score-totals">
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--blue)">BB🔵</div>
+        <div class="score-num blue">${ggBlue}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--blue)">KK🔵</div>
+        <div class="score-num blue">${kkBlue}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--red)">BB🔴</div>
+        <div class="score-num red">${ggRed}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-col-title" style="color:var(--red)">KK🔴</div>
+        <div class="score-num red">${kkRed}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMatches(matches) {
+  const wrap = document.getElementById('matchesWrap');
+  wrap.innerHTML = `<div class="matches-title">Partidas detalhadas</div>` + matches.map((m, idx) => `
+    <div class="match-card">
+      <div class="match-header">
+        <span class="match-num">Partida ${idx + 1}</span>
+        <span class="match-score" style="color:var(--blue)">B${m.allyB} K${m.allyK}</span>
+        <span style="color:var(--muted);font-family:Space Mono,monospace;font-size:12px">vs</span>
+        <span class="match-score" style="color:var(--red)">B${m.enemyB} K${m.enemyK}</span>
+      </div>
+      <div class="match-teams">
+        <div class="team">
+          ${m.allies.map(p => renderMokiRow(p, false)).join('')}
+        </div>
+        <div class="match-vs">VS</div>
+        <div class="team enemy">
+          ${m.enemies.map(p => renderMokiRow(p, true)).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMokiRow(p, isEnemy) {
+  const roleClass = p.role === 'K' ? 'role-K' : p.role === 'B' ? 'role-B' : 'role-N';
+  const avgStr = p.avgKills !== null
+    ? `<span class="moki-avg">K:${p.avgKills.toFixed(1)} W:${(p.avgWart||0).toFixed(0)} B:${(p.avgDeposits||0).toFixed(1)}</span>`
+    : '';
+  const champLabel = p.isChamp ? `<span class="champ-label">★ champ</span>` : '';
+  return `
+    <div class="moki-row ${isEnemy ? 'enemy' : ''} ${p.isChamp ? 'is-champ' : ''}">
+      <img class="moki-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">
+      <div class="moki-info ${isEnemy ? 'enemy' : ''}">
+        <span class="moki-name">${p.name} ${champLabel}</span>
+        <div class="moki-meta ${isEnemy ? 'enemy' : ''}">
+          <span class="class-badge ${p.cls}">${p.cls}</span>
+          <span class="role-badge ${roleClass}">${p.role}</span>
+          ${avgStr}
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
