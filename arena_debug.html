@@ -425,10 +425,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const hasSprSpr = sprDefCount >= 2;
   const hasSpecialCombo = hasDefDef || hasDefSpr || hasSprSpr;
 
-  // Generalistas contra Defender inimigo:
-  // - ambos avgKills >= 1.3 → 2 K
-  // - só um ou nenhum >= 1.3 → 1 K garantido
-  const enemyIsDefender = isDefenderChamp(enemyChampClass);
+  // Generalistas com champion do PROPRIO time sendo Defender = bonus K
   const generalistas = classified.filter(c => ['Forward','Anchor','Center','Flanker'].includes(c.cls));
   const generalistasHighKill = generalistas.filter(c => c.avgKills > 1.3);
 
@@ -468,18 +465,17 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
         // binary only, not total
       } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
         if (!comboUsed) { totalKillers++; comboUsed = true; }
-      } else if (isGeneralista && enemyIsDefender) {
-        // tratado em bloco abaixo, não contar aqui individualmente
       } else {
         totalKillers++;
       }
     }
   });
 
-  // Regra especial: generalistas contra champion Defender inimigo
-  // - ambos avgKills >= 1.3 → +2 K no total
-  // - só um ou nenhum >= 1.3 → +1 K garantido no total
-  if (enemyIsDefender && generalistas.length > 0) {
+  // Regra especial: generalistas com champion do PROPRIO time sendo Defender
+  // - ambos avgKills > 1.3 = +2 K no total
+  // - so um ou nenhum > 1.3 = +1 K garantido no total
+  const myChampIsDefender = isDefenderChamp(myChampClass);
+  if (myChampIsDefender && generalistas.length > 0) {
     if (generalistasHighKill.length >= 2) {
       totalKillers += 2;
     } else {
@@ -487,7 +483,8 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
     }
   }
 
-  const binKillers = finalRoles.some(r => r === 'K') ? 1 : 0;
+  const hasDefenderBonus = myChampIsDefender && generalistas.length > 0;
+  const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus) ? 1 : 0;
   const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
 
   return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles };
