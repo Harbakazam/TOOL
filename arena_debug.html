@@ -433,7 +433,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
     if (c.role === 'B' || c.role === 'K' || c.role === 'N') return c.role;
     if (c.role === 'DEF') {
       if (hasSpecialCombo) return 'K';
-      if (!isEnemyTeam && isGachaChamp(myChampClass) && enemyIsDefender) return 'K';
+      if (!isEnemyTeam && isGachaChamp(myChampClass) && isDefenderChamp(enemyChampClass)) return 'K';
       return 'N';
     }
     if (c.role === 'SPR_DEF') {
