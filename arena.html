@@ -386,32 +386,66 @@ async function loadData() {
       if (i < batches - 1) await sleep(250);
     }
 
-    // STEP 6: Fetch /stats for Generalistas + Grinders (mokiTokenId, breathing room 100ms)
-    const needsStatsArr = Array.from(needsStatsTokenIds);
-    const statsMap = {}; // by mokiTokenId -> { avgEliminations, avgDeposits, avgWartDistance }
+    // STEP 6: Medias Season 1 - cache localStorage valido por 12h
+    const CACHE_KEY = 'ga_leaderboard_cache';
+    const CACHE_TTL = 12 * 60 * 60 * 1000;
+    const statsMap = {};
 
-    for (let i = 0; i < needsStatsArr.length; i++) {
-      const tokenId = needsStatsArr[i];
-      const pct = 65 + Math.round((i / needsStatsArr.length) * 20);
-      if (i % 50 === 0) {
-        setStatus(`Buscando stats: ${i+1}/${needsStatsArr.length}...`, 'loading');
-        setProgress(pct, `Stats generalistas/grinders: ${i+1}/${needsStatsArr.length}...`);
+    let cacheLoaded = false;
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { timestamp, data } = JSON.parse(raw);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          Object.assign(statsMap, data);
+          cacheLoaded = true;
+          setStatus('Cache Season 1 carregado!', 'done');
+          setProgress(85, 'Cache Season 1 carregado!');
+        }
+      }
+    } catch(e) { console.warn('Cache read error:', e); }
+
+    if (!cacheLoaded) {
+      const leaderboardIds = ['6997a23dfe65385c3bd784e8', '6997a23dfe65385c3bd784e5'];
+      for (const lbId of leaderboardIds) {
+        const lbName = lbId === '6997a23dfe65385c3bd784e8' ? 'Regulars' : 'Champions';
+        let page = 1;
+        let totalPages = 999;
+        while (page <= totalPages) {
+          const pct = 65 + Math.round((page / 84) * 20);
+          setStatus(`Leaderboard ${lbName}: pagina ${page}${totalPages < 999 ? ' de ' + totalPages : ''}...`, 'loading');
+          setProgress(Math.min(pct, 84), `Carregando medias Season 1: ${lbName} p.${page}...`);
+          try {
+            const data = await apiGet(`/leaderboards/${lbId}/scores?limit=100&page=${page}`);
+            totalPages = data.pagination?.pages || 1;
+            (data.data || []).forEach(entry => {
+              const tid = entry.mokiTokenId;
+              const mm = entry.scoreDetail?.mokiMayhem;
+              if (mm) {
+                statsMap[tid] = {
+                  avgEliminations: mm.avgEliminations || 0,
+                  avgDeposits: mm.avgDeposits || 0,
+                  avgWartDistance: mm.avgWartDistance || 0
+                };
+              }
+            });
+          } catch(e) { console.warn(`LB page ${page} error:`, e); }
+          page++;
+          await sleep(100);
+        }
       }
       try {
-        const statsData = await apiGet(`/mokis/${tokenId}/stats`);
-        if (statsData.data) {
-          statsMap[tokenId] = {
-            avgEliminations: statsData.data.avgEliminations || 0,
-            avgDeposits: statsData.data.avgDeposits || 0,
-            avgWartDistance: statsData.data.avgWartDistance || 0
-          };
-        }
-      } catch(e) { statsMap[tokenId] = { avgEliminations: 0, avgDeposits: 0, avgWartDistance: 0 }; }
-      await sleep(100);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: statsMap }));
+        setStatus('Leaderboard Season 1 carregado e salvo no cache', 'done');
+      } catch(e) { console.warn('Cache write error:', e); }
     }
 
     // Helpers
     const getMoki = (tokenId) => champMap[tokenId] || supportMap[tokenId] || null;
+    const getMokiClass = (p) => {
+      const moki = getMoki(p.mokiTokenId);
+      return moki?.gameStats?.class || p.class; // usa gameStats.class, fallback p.class
+    };
     const getStats = (tokenId) => getMoki(tokenId)?.gameStats?.stats || null;
     const getAvgKills = (tokenId) => statsMap[tokenId]?.avgEliminations || 0;
     const getAvgData = (tokenId) => statsMap[tokenId] || null;
@@ -451,8 +485,8 @@ async function loadData() {
         const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
         const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getStats, getAvgKills, champMap, false);
-        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getStats, getAvgKills, champMap, true);
+        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false);
+        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true);
 
         if (allyResult.binGachas > 0) gBlue++;
         if (allyResult.binKillers > 0) kBlue++;
@@ -466,12 +500,11 @@ async function loadData() {
 
         // Store detailed match data for modal
         const buildPlayerDetail = (p, role) => {
-          const moki = getMoki(p.mokiTokenId);
           const avg = getAvgData(p.mokiTokenId);
           return {
             tokenId: p.mokiTokenId,
             name: p.name,
-            cls: p.class,
+            cls: getMokiClass(p),
             imageUrl: p.imageUrl,
             role,
             avgKills: avg?.avgEliminations ?? null,
@@ -518,14 +551,13 @@ async function loadData() {
   document.getElementById('loadBtn').disabled = false;
 }
 
-function classifyTeam(players, myChampClass, enemyChampClass, getStats, getAvgKills, champMap, isEnemyTeam) {
+function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam) {
   const isGachaChamp = (cls) => cls === 'Striker';
   const isDefenderChamp = (cls) => cls === 'Defender';
 
-  // First pass: individual classification
   const classified = players.map(p => {
     const tokenId = p.mokiTokenId;
-    const cls = p.class;
+    const cls = getMokiClass(p); // sempre usa gameStats.class, nunca p.class do matchup
     const stats = getStats(tokenId);
     const str = stats?.strength?.total || 0;
     const dex = stats?.dexterity?.total || 0;
@@ -540,47 +572,41 @@ function classifyTeam(players, myChampClass, enemyChampClass, getStats, getAvgKi
       case 'Sprinter': role = dex > def ? 'B' : 'SPR_DEF'; break;
       case 'Defender': role = 'DEF'; break;
       case 'Support': role = 'SUP'; break;
-      default: role = avgKills >= 1.3 ? 'K' : 'N'; // Generalistas
+      default: role = avgKills > 1.3 ? 'K' : 'N'; // Generalistas: estritamente > 1.3
     }
     return { tokenId, cls, role, str, dex, def, avgKills };
   });
 
   const defCount = classified.filter(c => c.role === 'DEF').length;
   const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
-
-  // Special combos = 1 Killer
   const hasDefDef = defCount >= 2;
   const hasDefSpr = defCount >= 1 && sprDefCount >= 1;
   const hasSprSpr = sprDefCount >= 2;
   const hasSpecialCombo = hasDefDef || hasDefSpr || hasSprSpr;
 
-  // Resolve final roles
+  // Generalistas com champion do PROPRIO time sendo Defender = bonus K
+  const generalistas = classified.filter(c => ['Forward','Anchor','Center','Flanker'].includes(c.cls));
+  const generalistasHighKill = generalistas.filter(c => c.avgKills > 1.3);
+
   const finalRoles = classified.map(c => {
     if (c.role === 'B' || c.role === 'K' || c.role === 'N') return c.role;
-
     if (c.role === 'DEF') {
       if (hasSpecialCombo) return 'K';
-      // Lone Defender: ally champ is Gacha + enemy champ is Defender = K
       if (!isEnemyTeam && isGachaChamp(myChampClass) && isDefenderChamp(enemyChampClass)) return 'K';
-      // Enemy team: lone defender next to 2 gachas = N (unless enemy champ is defender)
       return 'N';
     }
-
     if (c.role === 'SPR_DEF') {
       if (hasSpecialCombo) return 'K';
       return 'N';
     }
-
     if (c.role === 'SUP') {
-      if (isDefenderChamp(myChampClass)) return 'K'; // binary K, not total
+      if (isDefenderChamp(myChampClass)) return 'K';
       if (isGachaChamp(myChampClass)) return 'B';
       return 'N';
     }
-
     return 'N';
   });
 
-  // Count with special combo rule: Def+Def, Def+Spr, Spr+Spr = only 1 K in total
   let totalKillers = 0;
   let totalGachas = 0;
   let comboUsed = false;
@@ -590,11 +616,9 @@ function classifyTeam(players, myChampClass, enemyChampClass, getStats, getAvgKi
     if (role === 'B') {
       totalGachas++;
     } else if (role === 'K') {
-      // Support with Defender champ: binary only, NOT total
       if (origRole === 'SUP' && isDefenderChamp(myChampClass)) {
-        // skip total count for support
+        // binary only, not total
       } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
-        // combo: count only 1
         if (!comboUsed) { totalKillers++; comboUsed = true; }
       } else {
         totalKillers++;
@@ -602,8 +626,20 @@ function classifyTeam(players, myChampClass, enemyChampClass, getStats, getAvgKi
     }
   });
 
-  // Binary counts
-  const binKillers = finalRoles.some(r => r === 'K') ? 1 : 0;
+  // Regra especial: generalistas com champion do PROPRIO time sendo Defender
+  // - ambos > 1.3 kills = 2 K no total
+  // - um ou nenhum > 1.3 = 1 K garantido no total
+  const myChampIsDefender = isDefenderChamp(myChampClass);
+  if (myChampIsDefender && generalistas.length > 0) {
+    if (generalistasHighKill.length >= 2) {
+      totalKillers += 2;
+    } else {
+      totalKillers += 1;
+    }
+  }
+
+  const hasDefenderBonus = myChampIsDefender && generalistas.length > 0;
+  const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus) ? 1 : 0;
   const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
 
   return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles };
