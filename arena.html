@@ -98,6 +98,12 @@
   .col-group-blue2 { border-left: 1px solid rgba(85,153,255,0.2); }
   .col-group-red2 { border-left: 1px solid rgba(255,85,119,0.2); }
   .empty { text-align: center; padding: 4rem; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; display: none; }
+  .fav-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 2px 6px; opacity: 0.3; transition: opacity 0.2s; }
+  .fav-btn.active { opacity: 1; }
+  .tabs { display: none; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .tab-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 18px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .tab-btn.active { border-color: var(--accent); color: var(--accent); }
+  .champ-row { display: flex; align-items: center; gap: 8px; }
 
   /* MODAL */
   .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 100; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 2rem 1rem; }
@@ -183,10 +189,16 @@
   </div>
 </div>
 
+<div id="tabsBar" class="tabs">
+  <button class="tab-btn active" id="tab-all" onclick="setTab('all')">Todos</button>
+  <button class="tab-btn" id="tab-favs" onclick="setTab('favs')">⭐ Favoritos</button>
+  <button class="tab-btn" onclick="resetFavs()" style="margin-left:auto;color:var(--muted)">Resetar Favs</button>
+</div>
 <div id="tableWrap" class="table-wrap">
   <table>
     <thead>
       <tr>
+        <th style="width:36px;cursor:default"></th>
         <th onclick="sortBy('name')">Champion <span id="arr-name"></span></th>
         <th onclick="sortBy('class')">Classe <span id="arr-class"></span></th>
         <th class="col-group-blue th-blue" onclick="sortBy('gBlue')">B🔵 <span id="arr-gBlue"></span></th>
@@ -226,6 +238,8 @@ let champMatchesData = {}; // champion tokenId -> match list with classification
 let sortCol = 'kkRed';
 let sortDir = -1;
 let filterClass = 'all';
+let activeTab = 'all';
+let favorites = new Set();
 const cache = {};
 
 window.onload = () => {
@@ -233,6 +247,44 @@ window.onload = () => {
   if (saved) document.getElementById('apiKey').value = saved;
   buildClassFilters();
 };
+
+function loadFavs() {
+  const contestId = getContestId();
+  const key = 'ga_favs_' + contestId;
+  try {
+    const raw = localStorage.getItem(key);
+    favorites = raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e) { favorites = new Set(); }
+}
+
+function saveFavs() {
+  const contestId = getContestId();
+  const key = 'ga_favs_' + contestId;
+  try { localStorage.setItem(key, JSON.stringify([...favorites])); } catch(e) {}
+}
+
+function toggleFav(champTokenId, e) {
+  e.stopPropagation();
+  if (favorites.has(champTokenId)) favorites.delete(champTokenId);
+  else favorites.add(champTokenId);
+  saveFavs();
+  renderTable();
+}
+
+function resetFavs() {
+  if (!confirm('Resetar todos os favoritos deste contest?')) return;
+  const contestId = getContestId();
+  localStorage.removeItem('ga_favs_' + contestId);
+  favorites = new Set();
+  renderTable();
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-all').classList.toggle('active', tab === 'all');
+  document.getElementById('tab-favs').classList.toggle('active', tab === 'favs');
+  renderTable();
+}
 
 function saveKey() {
   const k = document.getElementById('apiKey').value.trim();
@@ -513,8 +565,21 @@ async function loadData() {
           };
         };
 
+        // Champion detail para mostrar no modal
+        const champDetail = {
+          tokenId: cTokenId,
+          name: champ.name,
+          cls: champ.gameStats?.class || '?',
+          imageUrl: champ.imageUrl || '',
+          role: 'CHAMP',
+          avgKills: getAvgData(cTokenId)?.avgEliminations ?? null,
+          avgDeposits: getAvgData(cTokenId)?.avgDeposits ?? null,
+          avgWart: getAvgData(cTokenId)?.avgWartDistance ?? null
+        };
+
         detailedMatches.push({
           matchIdx: matchIdx + 1,
+          champ: champDetail,
           allies: allies.map((p, i) => buildPlayerDetail(p, allyResult.roles[i])),
           enemies: enemies.map((p, i) => buildPlayerDetail(p, enemyResult.roles[i])),
           allyB: allyResult.totalGachas,
@@ -538,10 +603,12 @@ async function loadData() {
 
     setProgress(100, `Análise completa — ${allRows.length} champions`);
     setStatus(`✓ ${allRows.length} champions | ${matches.length} partidas`, 'done');
+    loadFavs();
     renderSummary();
     renderTable();
     document.getElementById('filtersSection').style.display = 'block';
     document.getElementById('summaryBar').style.display = 'flex';
+    document.getElementById('tabsBar').style.display = 'flex';
 
   } catch(e) {
     setStatus('Erro: ' + e.message, 'error');
@@ -664,6 +731,7 @@ function openModal(champTokenId) {
       </div>
       <div class="match-teams">
         <div class="team">
+          ${renderChampRow(m.champ)}
           ${m.allies.map(p => renderMokiRow(p, false)).join('')}
         </div>
         <div class="match-vs">VS</div>
@@ -675,6 +743,24 @@ function openModal(champTokenId) {
   `).join('');
 
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function renderChampRow(p) {
+  const avgStr = p.avgKills !== null
+    ? `<span class="moki-avg">K:${p.avgKills.toFixed(1)} W:${(p.avgWart||0).toFixed(0)} B:${(p.avgDeposits||0).toFixed(1)}</span>`
+    : '';
+  return `
+    <div class="moki-row" style="border:1px solid rgba(0,255,136,0.3);border-radius:8px;padding:2px 6px;background:rgba(0,255,136,0.04);margin-bottom:2px">
+      <img class="moki-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">
+      <div class="moki-info">
+        <span class="moki-name" style="color:var(--accent)">${p.name} <span style="font-size:9px;color:var(--accent);font-family:Space Mono,monospace">CHAMP</span></span>
+        <div class="moki-meta">
+          <span class="class-badge ${p.cls}">${p.cls}</span>
+          ${avgStr}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderMokiRow(p, isEnemy) {
@@ -744,6 +830,8 @@ function renderTable() {
     r.ggRed >= fggRed && r.kkRed >= fkkRed
   );
 
+  if (activeTab === 'favs') rows = rows.filter(r => favorites.has(r.champTokenId));
+
   rows.sort((a, b) => {
     const av = a[sortCol]; const bv = b[sortCol];
     if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
@@ -761,6 +849,7 @@ function renderTable() {
 
   document.getElementById('tableBody').innerHTML = rows.map(r => `
     <tr class="${r.matches < 10 ? 'warning' : ''}" onclick="openModal(${r.champTokenId})">
+      <td><button class="fav-btn ${favorites.has(r.champTokenId) ? 'active' : ''}" onclick="toggleFav(${r.champTokenId}, event)">⭐</button></td>
       <td><span class="champion-name">${r.name}</span></td>
       <td><span class="class-badge ${r.class}">${r.class}</span></td>
       <td class="col-group-blue"><span class="num blue ${r.gBlue===0?'zero':''}">${r.gBlue}</span></td>
