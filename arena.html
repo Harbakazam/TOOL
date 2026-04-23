@@ -73,8 +73,8 @@
   th { padding: 11px 14px; text-align: left; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
   th:hover { color: var(--text); }
   th.sorted { color: var(--accent); }
-  .th-blue { color: var(--blue) !important; }
-  .th-red { color: var(--red) !important; }
+  .th-blue { color: #aaaacc !important; }
+  .th-red { color: #aaaacc !important; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; }
   tbody tr:hover { background: var(--surface2); }
   tbody tr.warning td:first-child::after { content: ' ⚠'; color: #ffb400; font-size: 11px; }
@@ -89,14 +89,14 @@
   .class-badge.Grinder { background: rgba(180,100,255,0.2); color: #cc77ff; border-color: rgba(180,100,255,0.4); }
   .class-badge.Support { background: rgba(255,180,50,0.2); color: #ffbb44; border-color: rgba(255,180,50,0.4); }
   .class-badge.Forward,.class-badge.Anchor,.class-badge.Center,.class-badge.Flanker { background: rgba(180,180,220,0.15); color: #bbbbdd; border-color: rgba(180,180,220,0.3); }
-  .num { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; }
-  .num.blue { color: var(--blue); }
-  .num.red { color: var(--red); }
-  .num.zero { color: var(--border); }
-  .col-group-blue { border-left: 2px solid rgba(85,153,255,0.4); }
-  .col-group-red { border-left: 2px solid rgba(255,85,119,0.4); }
-  .col-group-blue2 { border-left: 1px solid rgba(85,153,255,0.2); }
-  .col-group-red2 { border-left: 1px solid rgba(255,85,119,0.2); }
+  .num { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: #ffffff; }
+  .num.zero { color: #3a3a50; }
+  .col-blue { background: rgba(85,153,255,0.10); border-left: 1px solid rgba(85,153,255,0.25); }
+  .col-red { background: rgba(255,85,119,0.10); border-left: 1px solid rgba(255,85,119,0.25); }
+  .col-group-blue { background: rgba(85,153,255,0.10); border-left: 2px solid rgba(85,153,255,0.5); }
+  .col-group-red { background: rgba(255,85,119,0.10); border-left: 2px solid rgba(255,85,119,0.5); }
+  .col-group-blue2 { background: rgba(85,153,255,0.08); border-left: 2px solid rgba(85,153,255,0.5); }
+  .col-group-red2 { background: rgba(255,85,119,0.08); border-left: 2px solid rgba(255,85,119,0.5); }
   .empty { text-align: center; padding: 4rem; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px; display: none; }
   .fav-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 2px 6px; opacity: 0.3; transition: opacity 0.2s; }
   .toggle-wrap { display: flex; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); }
@@ -209,13 +209,13 @@
         <th onclick="sortBy('name')">Champion <span id="arr-name"></span></th>
         <th onclick="sortBy('class')">Classe <span id="arr-class"></span></th>
         <th class="col-group-blue th-blue" onclick="sortBy('gBlue')">B🔵 <span id="arr-gBlue"></span></th>
-        <th class="col-group-blue2 th-blue" onclick="sortBy('kBlue')">K🔵 <span id="arr-kBlue"></span></th>
+        <th class="col-blue th-blue" onclick="sortBy('kBlue')">K🔵 <span id="arr-kBlue"></span></th>
         <th class="col-group-red th-red" onclick="sortBy('gRed')">B🔴 <span id="arr-gRed"></span></th>
-        <th class="col-group-red2 th-red" onclick="sortBy('kRed')">K🔴 <span id="arr-kRed"></span></th>
-        <th class="col-group-blue th-blue" onclick="sortBy('ggBlue')">BB🔵 <span id="arr-ggBlue"></span></th>
-        <th class="col-group-blue2 th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
-        <th class="col-group-red th-red" onclick="sortBy('ggRed')">BB🔴 <span id="arr-ggRed"></span></th>
-        <th class="col-group-red2 th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
+        <th class="col-red th-red" onclick="sortBy('kRed')">K🔴 <span id="arr-kRed"></span></th>
+        <th class="col-group-blue2 th-blue" onclick="sortBy('ggBlue')">BB🔵 <span id="arr-ggBlue"></span></th>
+        <th class="col-blue th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
+        <th class="col-group-red2 th-red" onclick="sortBy('ggRed')">BB🔴 <span id="arr-ggRed"></span></th>
+        <th class="col-red th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
         <th onclick="sortBy('matches')" style="color:var(--muted)">Pts <span id="arr-matches"></span></th>
       </tr>
     </thead>
@@ -947,14 +947,14 @@ function renderTable() {
       <td><button class="fav-btn ${favorites.has(r.champTokenId) ? 'active' : ''}" onclick="toggleFav(${r.champTokenId}, event)">⭐</button></td>
       <td><span class="champion-name">${r.name}</span></td>
       <td><span class="class-badge ${r.class}">${r.class}</span></td>
-      <td class="col-group-blue"><span class="num blue ${r.gBlue===0?'zero':''}">${r.gBlue}</span></td>
-      <td class="col-group-blue2"><span class="num blue ${r.kBlue===0?'zero':''}">${r.kBlue}</span></td>
-      <td class="col-group-red"><span class="num red ${r.gRed===0?'zero':''}">${r.gRed}</span></td>
-      <td class="col-group-red2"><span class="num red ${r.kRed===0?'zero':''}">${r.kRed}</span></td>
-      <td class="col-group-blue"><span class="num blue ${r.ggBlue===0?'zero':''}">${r.ggBlue}</span></td>
-      <td class="col-group-blue2"><span class="num blue ${r.kkBlue===0?'zero':''}">${r.kkBlue}</span></td>
-      <td class="col-group-red"><span class="num red ${r.ggRed===0?'zero':''}">${r.ggRed}</span></td>
-      <td class="col-group-red2"><span class="num red ${r.kkRed===0?'zero':''}">${r.kkRed}</span></td>
+      <td class="col-group-blue"><span class="num ${r.gBlue===0?'zero':''}">${r.gBlue}</span></td>
+      <td class="col-blue"><span class="num ${r.kBlue===0?'zero':''}">${r.kBlue}</span></td>
+      <td class="col-group-red"><span class="num ${r.gRed===0?'zero':''}">${r.gRed}</span></td>
+      <td class="col-red"><span class="num ${r.kRed===0?'zero':''}">${r.kRed}</span></td>
+      <td class="col-group-blue2"><span class="num ${r.ggBlue===0?'zero':''}">${r.ggBlue}</span></td>
+      <td class="col-blue"><span class="num ${r.kkBlue===0?'zero':''}">${r.kkBlue}</span></td>
+      <td class="col-group-red2"><span class="num ${r.ggRed===0?'zero':''}">${r.ggRed}</span></td>
+      <td class="col-red"><span class="num ${r.kkRed===0?'zero':''}">${r.kkRed}</span></td>
       <td><span style="color:var(--muted);font-family:Space Mono,monospace;font-size:13px">${r.matches}</span></td>
     </tr>
   `).join('');
