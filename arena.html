@@ -216,10 +216,10 @@
         <th class="col-blue th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
         <th class="col-group-red2 th-red" onclick="sortBy('ggRed')">BB🔴 <span id="arr-ggRed"></span></th>
         <th class="col-red th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
+        <th onclick="sortBy('matches')" style="color:var(--muted)">Pts <span id="arr-matches"></span></th>
         <th style="border-left:2px solid rgba(180,180,180,0.3);background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px" onclick="sortBy('vaBlue')">VA <span id="arr-vaBlue"></span></th>
         <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('vrBlue')">VR <span id="arr-vrBlue"></span></th>
         <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('gcCount')">GC <span id="arr-gcCount"></span></th>
-        <th onclick="sortBy('matches')" style="color:var(--muted)">Pts <span id="arr-matches"></span></th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -559,7 +559,7 @@ async function loadData() {
         const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
         const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies);
+        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies.filter(p => !champMap[p.mokiTokenId]));
         const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies);
 
         if (allyResult.binGachas > 0) gBlue++;
@@ -663,14 +663,6 @@ async function loadData() {
   document.getElementById('loadBtn').disabled = false;
 }
 
-function isDefDef(cls, dex, def) {
-  return cls === 'Defender' || (cls === 'Sprinter' && def >= dex);
-}
-
-function isGachaClass(cls, str, dex) {
-  return cls === 'Striker' || (cls === 'Sprinter' && dex > 0 && dex > (arguments[2] || 0)) || (cls === 'Grinder' && dex > str);
-}
-
 function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam, threshold, enemyPlayers) {
   const isDefenderChamp = (cls) => cls === 'Defender';
   const isGachaChamp = (cls) => cls === 'Striker';
@@ -702,14 +694,23 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
   const totalDefLike = defCount + sprDefCount;
 
-  // Verificar se inimigo tem pelo menos 1 Def ou SprDef
-  const enemyHasDefLike = (enemyPlayers || []).some(p => {
+  // Verificar se inimigo tem pelo menos 1 Def ou SprDef (incluindo champion inimigo)
+  const enemyChampIsDefLike = enemyChampClass === 'Defender' ||
+    (enemyChampClass === 'Sprinter' && (() => {
+      // Verificar stats do champion inimigo se disponivel via enemyPlayers
+      const ec = (enemyPlayers || []).find(p => champMap[p.mokiTokenId]);
+      if (!ec) return false;
+      const s = getStats(ec.mokiTokenId);
+      return (s?.defense?.total || 0) >= (s?.dexterity?.total || 0);
+    })());
+  const enemySupportsHaveDefLike = (enemyPlayers || []).filter(p => !champMap[p.mokiTokenId]).some(p => {
     const cls = getMokiClass(p);
     const stats = getStats(p.mokiTokenId);
     const dex = stats?.dexterity?.total || 0;
     const def = stats?.defense?.total || 0;
     return cls === 'Defender' || (cls === 'Sprinter' && def >= dex);
   });
+  const enemyHasDefLike = enemyChampIsDefLike || enemySupportsHaveDefLike;
 
   // Champion do proprio time
   const myChampIsDefender = isDefenderChamp(myChampClass);
@@ -745,6 +746,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
 
   finalRoles.forEach((role, i) => {
     const origRole = classified[i].role;
+    const isGeneralista = ['Forward','Anchor','Center','Flanker'].includes(classified[i].cls);
     if (role === 'B') {
       totalGachas++;
     } else if (role === 'K') {
@@ -752,30 +754,22 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
         // binary only, nao conta no total
       } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
         if (enemyHasDefLike) {
-          // cada um conta individualmente
           totalKillers++;
-        } else if (myChampIsDefender) {
-          // champion Defender sem inimigo Def: tratado abaixo
         }
+        // sem inimigo Def: tratado abaixo
+      } else if (isGeneralista && myChampIsDefender) {
+        // generalistas com champion Defender: tratado abaixo no bonus
       } else {
         totalKillers++;
       }
     }
   });
 
-  // Regra: Def/SprDef sem inimigo Def mas com champion Defender
-  if (myChampIsDefender && !enemyHasDefLike) {
-    // 1=N, 2=1K, 3=2K (ja que so tem 1 wart)
+  // Regra: Def/SprDef sem inimigo Def (independente do champion proprio)
+  if (!enemyHasDefLike) {
     if (totalDefLike === 2) totalKillers += 1;
     else if (totalDefLike >= 3) totalKillers += 2;
-    // 1 sozinho = N (nao adiciona)
-  }
-
-  // Regra: Def/SprDef sem inimigo Def e sem champion Defender
-  if (!myChampIsDefender && !enemyHasDefLike) {
-    // 1=N, 2=1K, 3=2K
-    if (totalDefLike === 2) totalKillers += 1;
-    else if (totalDefLike >= 3) totalKillers += 2;
+    // 1 sozinho = N
   }
 
   // Bonus generalistas com champion Defender
@@ -801,12 +795,6 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
 function recalculate() {
   if (Object.keys(rawMatchData).length === 0) return;
   killThreshold = document.getElementById('toggleKill14')?.checked ? 1.4 : 1.3;
-
-  const getMoki = (tokenId) => {
-    // rebuild from cache — champMap e supportMap ficam no closure do loadData
-    // usamos os dados já carregados no cache de sessão
-    return null;
-  };
 
   // Recalcular usando os dados já em memória
   allRows = [];
@@ -902,13 +890,27 @@ function openModal(champTokenId) {
   document.getElementById('modalTitle').textContent = `${row.name} — ${row.class} — ${matches.length} partidas`;
 
   const body = document.getElementById('modalBody');
-  body.innerHTML = matches.map((m, idx) => `
+  body.innerHTML = matches.map((m, idx) => {
+    const aK = m.allyK;
+    const eK = m.enemyK;
+    let vantagem = '';
+    if (aK > eK) {
+      if (eK === 0) vantagem = `<span style="color:#9FE1CB;font-size:12px;font-family:monospace">Vantagem Absoluta — Aliado</span>`;
+      else vantagem = `<span style="color:#B5D4F4;font-size:12px;font-family:monospace">Vantagem Relativa — Aliado</span>`;
+    } else if (eK > aK) {
+      if (aK === 0) vantagem = `<span style="color:#F7C1C1;font-size:12px;font-family:monospace">Vantagem Absoluta — Inimigo</span>`;
+      else vantagem = `<span style="color:#FAC775;font-size:12px;font-family:monospace">Vantagem Relativa — Inimigo</span>`;
+    } else {
+      vantagem = `<span style="color:#888;font-size:12px;font-family:monospace">Neutro</span>`;
+    }
+    return `
     <div class="match-card">
       <div class="match-header">
         <span class="match-num">Partida ${idx + 1}</span>
         <span class="match-score" style="color:var(--blue)">B${m.allyB} K${m.allyK}</span>
         <span class="match-score" style="color:var(--muted)">vs</span>
         <span class="match-score" style="color:var(--red)">B${m.enemyB} K${m.enemyK}</span>
+        ${vantagem}
       </div>
       <div class="match-teams">
         <div class="team">
@@ -921,7 +923,8 @@ function openModal(champTokenId) {
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   document.getElementById('modalOverlay').classList.add('open');
 }
