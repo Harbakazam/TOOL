@@ -558,8 +558,9 @@ async function loadData() {
         const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
         const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies.filter(p => !champMap[p.mokiTokenId]));
-        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies);
+        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies.filter(p => !champMap[p.mokiTokenId]), enemyChamp);
+        const allyChamp = { mokiTokenId: cTokenId };
+        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies, allyChamp);
 
         if (allyResult.binGachas > 0) gBlue++;
         if (allyResult.binKillers > 0) kBlue++;
@@ -662,7 +663,7 @@ async function loadData() {
   document.getElementById('loadBtn').disabled = false;
 }
 
-function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam, threshold, enemyPlayers) {
+function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam, threshold, enemyPlayers, enemyChampPlayer) {
   const isDefenderChamp = (cls) => cls === 'Defender';
   const isGachaChamp = (cls) => cls === 'Striker';
 
@@ -693,16 +694,17 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
   const totalDefLike = defCount + sprDefCount;
 
-  // Verificar se inimigo tem pelo menos 1 Def ou SprDef (incluindo champion inimigo)
-  const enemyChampIsDefLike = enemyChampClass === 'Defender' ||
-    (enemyChampClass === 'Sprinter' && (() => {
-      // Verificar stats do champion inimigo se disponivel via enemyPlayers
-      const ec = (enemyPlayers || []).find(p => champMap[p.mokiTokenId]);
-      if (!ec) return false;
-      const s = getStats(ec.mokiTokenId);
+  // Verificar se champion inimigo é Def ou SprDef
+  const enemyChampIsDefLike = (() => {
+    if (enemyChampClass === 'Defender') return true;
+    if (enemyChampClass === 'Sprinter' && enemyChampPlayer) {
+      const s = getStats(enemyChampPlayer.mokiTokenId);
       return (s?.defense?.total || 0) >= (s?.dexterity?.total || 0);
-    })());
-  const enemySupportsHaveDefLike = (enemyPlayers || []).filter(p => !champMap[p.mokiTokenId]).some(p => {
+    }
+    return false;
+  })();
+  // Verificar se suportes inimigos tem Def ou SprDef (enemyPlayers já vem sem o champion)
+  const enemySupportsHaveDefLike = (enemyPlayers || []).some(p => {
     const cls = getMokiClass(p);
     const stats = getStats(p.mokiTokenId);
     const dex = stats?.dexterity?.total || 0;
@@ -781,6 +783,13 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   if (myChampIsDefender && enemyHasDefLike) {
     totalKillers += 1;
   }
+
+  console.log('classifyTeam debug:', {
+    myChampClass, enemyChampClass, enemyHasDefLike, totalDefLike,
+    generalistas: generalistas.length, generalistasHighKill: generalistasHighKill.length,
+    totalKillers, totalGachas,
+    roles: finalRoles
+  });
 
   const hasDefenderBonus = myChampIsDefender && (generalistas.length > 0 || enemyHasDefLike);
   const hasDefLikeK = enemyHasDefLike && totalDefLike > 0;
