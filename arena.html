@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.1</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.2</span></div>
 </div>
 
 <div class="setup">
@@ -558,10 +558,9 @@ async function loadData() {
         const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
         const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const enemySupporters = enemies.filter(p => !champMap[p.mokiTokenId]);
         const allyChamp = { mokiTokenId: cTokenId };
-        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemySupporters, enemyChamp);
-        const enemyResult = classifyTeam(enemySupporters, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies, allyChamp);
+        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies.filter(p => !champMap[p.mokiTokenId]), enemyChamp);
+        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies, allyChamp);
 
         if (allyResult.binGachas > 0) gBlue++;
         if (allyResult.binKillers > 0) kBlue++;
@@ -668,7 +667,9 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const isDefenderChamp = (cls) => cls === 'Defender';
   const isGachaChamp = (cls) => cls === 'Striker';
 
-  const classified = players.map(p => {
+  const classified = players
+    .filter(p => !champMap[p.mokiTokenId]) // excluir champion inimigo da classificacao
+    .map(p => {
     const tokenId = p.mokiTokenId;
     const cls = getMokiClass(p);
     const stats = getStats(tokenId);
