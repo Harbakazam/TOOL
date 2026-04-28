@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.4</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.5</span></div>
 </div>
 
 <div class="setup">
@@ -747,7 +747,6 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   let totalGachas = 0;
 
   finalRoles.forEach((role, i) => {
-    if (classified[i].isEnemyChamp) return; // champion inimigo nao conta nas totalizacoes
     const origRole = classified[i].role;
     const isGeneralista = ['Forward','Anchor','Center','Flanker'].includes(classified[i].cls);
     if (role === 'B') {
@@ -1078,3 +1077,4 @@ function renderSummary() {
 </script>
 </body>
 </html>
+
