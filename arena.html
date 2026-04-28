@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.2</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.3</span></div>
 </div>
 
 <div class="setup">
@@ -826,8 +826,9 @@ function recalculate() {
       const enemyChampRaw = enemies.find(p => sessionChampMap[p.mokiTokenId]);
       const enemyChampClass = enemyChampRaw ? sessionChampMap[enemyChampRaw.mokiTokenId]?.gameStats?.class : null;
 
-      const allyResult = classifyTeam(allies, champClass, enemyChampClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, false, killThreshold, enemies);
-      const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, true, killThreshold, allies);
+      const allyChamp = { mokiTokenId: cTokenId };
+      const allyResult = classifyTeam(allies, champClass, enemyChampClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, false, killThreshold, enemies.filter(p => !sessionChampMap[p.mokiTokenId]), enemyChampRaw);
+      const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, true, killThreshold, allies, allyChamp);
 
       if (allyResult.binGachas > 0) gBlue++;
       if (allyResult.binKillers > 0) kBlue++;
@@ -843,15 +844,14 @@ function recalculate() {
       if (aK > eK) { if (eK === 0) vaBlue++; else vrBlue++; }
       else if (eK > aK) { if (aK === 0) vaRed++; else vrRed++; }
 
-      const ecStats = sessionGetStats(enemyChampRaw?.mokiTokenId);
-      const ecStr = ecStats?.strength?.total || 0;
-      const ecDex = ecStats?.dexterity?.total || 0;
-      const ecDef = ecStats?.defense?.total || 0;
-      const ecCls = entry.enemyChampClass;
-      if (ecCls) {
-        const isGachaEC = ecCls === 'Striker' ||
-          (ecCls === 'Sprinter' && ecDex > ecDef) ||
-          (ecCls === 'Grinder' && ecDex > ecStr);
+      if (enemyChampClass) {
+        const ecStats = sessionGetStats(enemyChampRaw?.mokiTokenId);
+        const ecStr = ecStats?.strength?.total || 0;
+        const ecDex = ecStats?.dexterity?.total || 0;
+        const ecDef = ecStats?.defense?.total || 0;
+        const isGachaEC = enemyChampClass === 'Striker' ||
+          (enemyChampClass === 'Sprinter' && ecDex > ecDef) ||
+          (enemyChampClass === 'Grinder' && ecDex > ecStr);
         if (isGachaEC) gcCount++;
       }
 
