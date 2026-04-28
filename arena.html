@@ -216,6 +216,9 @@
         <th class="col-blue th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
         <th class="col-group-red2 th-red" onclick="sortBy('ggRed')">BB🔴 <span id="arr-ggRed"></span></th>
         <th class="col-red th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
+        <th style="border-left:2px solid rgba(180,180,180,0.3);background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px" onclick="sortBy('vaBlue')">VA <span id="arr-vaBlue"></span></th>
+        <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('vrBlue')">VR <span id="arr-vrBlue"></span></th>
+        <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('gcCount')">GC <span id="arr-gcCount"></span></th>
         <th onclick="sortBy('matches')" style="color:var(--muted)">Pts <span id="arr-matches"></span></th>
       </tr>
     </thead>
@@ -545,6 +548,7 @@ async function loadData() {
 
       let gBlue=0, kBlue=0, gRed=0, kRed=0;
       let ggBlue=0, kkBlue=0, ggRed=0, kkRed=0;
+      let vaBlue=0, vaRed=0, vrBlue=0, vrRed=0, gcCount=0;
       const detailedMatches = [];
 
       matchList.forEach(({ match, champSide, champTokenId: cTokenId }, matchIdx) => {
@@ -555,8 +559,8 @@ async function loadData() {
         const enemyChamp = enemies.find(p => champMap[p.mokiTokenId]);
         const enemyChampClass = enemyChamp ? champMap[enemyChamp.mokiTokenId]?.gameStats?.class : null;
 
-        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold);
-        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold);
+        const allyResult = classifyTeam(allies, champClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, false, killThreshold, enemies);
+        const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, getMokiClass, getStats, getAvgKills, champMap, true, killThreshold, allies);
 
         if (allyResult.binGachas > 0) gBlue++;
         if (allyResult.binKillers > 0) kBlue++;
@@ -567,6 +571,27 @@ async function loadData() {
         kkBlue += allyResult.totalKillers;
         ggRed += enemyResult.totalGachas;
         kkRed += enemyResult.totalKillers;
+
+        // VA / VR
+        const aK = allyResult.totalKillers;
+        const eK = enemyResult.totalKillers;
+        if (aK > eK) {
+          if (eK === 0) vaBlue++; else vrBlue++;
+        } else if (eK > aK) {
+          if (aK === 0) vaRed++; else vrRed++;
+        }
+
+        // GC: champion inimigo é Gacha?
+        if (enemyChamp) {
+          const ecStats = getStats(enemyChamp.mokiTokenId);
+          const ecStr = ecStats?.strength?.total || 0;
+          const ecDex = ecStats?.dexterity?.total || 0;
+          const ecCls = enemyChampClass;
+          const isGachaEC = ecCls === 'Striker' ||
+            (ecCls === 'Sprinter' && ecDex > (ecStats?.defense?.total || 0)) ||
+            (ecCls === 'Grinder' && ecDex > ecStr);
+          if (isGachaEC) gcCount++;
+        }
 
         // Store detailed match data for modal
         const buildPlayerDetail = (p, role) => {
@@ -616,6 +641,7 @@ async function loadData() {
         champTokenId,
         gBlue, kBlue, gRed, kRed,
         ggBlue, kkBlue, ggRed, kkRed,
+        vaBlue, vaRed, vrBlue, vrRed, gcCount,
         matches: matchList.length
       });
     }
@@ -637,13 +663,21 @@ async function loadData() {
   document.getElementById('loadBtn').disabled = false;
 }
 
-function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam, threshold) {
-  const isGachaChamp = (cls) => cls === 'Striker';
+function isDefDef(cls, dex, def) {
+  return cls === 'Defender' || (cls === 'Sprinter' && def >= dex);
+}
+
+function isGachaClass(cls, str, dex) {
+  return cls === 'Striker' || (cls === 'Sprinter' && dex > 0 && dex > (arguments[2] || 0)) || (cls === 'Grinder' && dex > str);
+}
+
+function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getStats, getAvgKills, champMap, isEnemyTeam, threshold, enemyPlayers) {
   const isDefenderChamp = (cls) => cls === 'Defender';
+  const isGachaChamp = (cls) => cls === 'Striker';
 
   const classified = players.map(p => {
     const tokenId = p.mokiTokenId;
-    const cls = getMokiClass(p); // sempre usa gameStats.class, nunca p.class do matchup
+    const cls = getMokiClass(p);
     const stats = getStats(tokenId);
     const str = stats?.strength?.total || 0;
     const dex = stats?.dexterity?.total || 0;
@@ -663,72 +697,105 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
     return { tokenId, cls, role, str, dex, def, avgKills };
   });
 
+  // Contar Def/SprDef no proprio time
   const defCount = classified.filter(c => c.role === 'DEF').length;
   const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
-  const hasDefDef = defCount >= 2;
-  const hasDefSpr = defCount >= 1 && sprDefCount >= 1;
-  const hasSprSpr = sprDefCount >= 2;
-  const hasSpecialCombo = hasDefDef || hasDefSpr || hasSprSpr;
+  const totalDefLike = defCount + sprDefCount;
 
-  // Generalistas com champion do PROPRIO time sendo Defender = bonus K
+  // Verificar se inimigo tem pelo menos 1 Def ou SprDef
+  const enemyHasDefLike = (enemyPlayers || []).some(p => {
+    const cls = getMokiClass(p);
+    const stats = getStats(p.mokiTokenId);
+    const dex = stats?.dexterity?.total || 0;
+    const def = stats?.defense?.total || 0;
+    return cls === 'Defender' || (cls === 'Sprinter' && def >= dex);
+  });
+
+  // Champion do proprio time
+  const myChampIsDefender = isDefenderChamp(myChampClass);
+
+  // Generalistas
   const generalistas = classified.filter(c => ['Forward','Anchor','Center','Flanker'].includes(c.cls));
   const generalistasHighKill = generalistas.filter(c => threshold >= 1.4 ? c.avgKills >= threshold : c.avgKills > threshold);
 
+  // Resolver roles finais
   const finalRoles = classified.map(c => {
     if (c.role === 'B' || c.role === 'K' || c.role === 'N') return c.role;
-    if (c.role === 'DEF') {
-      if (hasSpecialCombo) return 'K';
-      if (!isEnemyTeam && isGachaChamp(myChampClass) && isDefenderChamp(enemyChampClass)) return 'K';
+
+    if (c.role === 'DEF' || c.role === 'SPR_DEF') {
+      // Se inimigo tem Def/SprDef -> cada um vira K individual
+      if (enemyHasDefLike) return 'K';
+      // Se champion proprio time é Defender -> conta (tratado no total abaixo)
+      if (myChampIsDefender) return 'K';
+      // Sem inimigo Def e sem champion Defender: nao conta individualmente
       return 'N';
     }
-    if (c.role === 'SPR_DEF') {
-      if (hasSpecialCombo) return 'K';
-      return 'N';
-    }
+
     if (c.role === 'SUP') {
-      if (isDefenderChamp(myChampClass)) return 'K';
+      if (isDefenderChamp(myChampClass)) return 'K'; // binary only
       if (isGachaChamp(myChampClass)) return 'B';
       return 'N';
     }
     return 'N';
   });
 
+  // Contar totais
   let totalKillers = 0;
   let totalGachas = 0;
-  let comboUsed = false;
 
   finalRoles.forEach((role, i) => {
     const origRole = classified[i].role;
     if (role === 'B') {
       totalGachas++;
     } else if (role === 'K') {
-      if (origRole === 'SUP' && isDefenderChamp(myChampClass)) {
-        // binary only, not total
+      if (origRole === 'SUP' && myChampIsDefender) {
+        // binary only, nao conta no total
       } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
-        if (!comboUsed) { totalKillers++; comboUsed = true; }
+        if (enemyHasDefLike) {
+          // cada um conta individualmente
+          totalKillers++;
+        } else if (myChampIsDefender) {
+          // champion Defender sem inimigo Def: tratado abaixo
+        }
       } else {
         totalKillers++;
       }
     }
   });
 
-  // Regra especial: generalistas com champion do PROPRIO time sendo Defender
-  // - ambos > 1.3 kills = 2 K no total
-  // - um ou nenhum > 1.3 = 1 K garantido no total
-  const myChampIsDefender = isDefenderChamp(myChampClass);
-  if (myChampIsDefender && generalistas.length > 0) {
-    if (generalistasHighKill.length >= 2) {
-      totalKillers += 2;
-    } else {
-      totalKillers += 1;
-    }
+  // Regra: Def/SprDef sem inimigo Def mas com champion Defender
+  if (myChampIsDefender && !enemyHasDefLike) {
+    // 1=N, 2=1K, 3=2K (ja que so tem 1 wart)
+    if (totalDefLike === 2) totalKillers += 1;
+    else if (totalDefLike >= 3) totalKillers += 2;
+    // 1 sozinho = N (nao adiciona)
   }
 
-  const hasDefenderBonus = myChampIsDefender && generalistas.length > 0;
-  const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus) ? 1 : 0;
+  // Regra: Def/SprDef sem inimigo Def e sem champion Defender
+  if (!myChampIsDefender && !enemyHasDefLike) {
+    // 1=N, 2=1K, 3=2K
+    if (totalDefLike === 2) totalKillers += 1;
+    else if (totalDefLike >= 3) totalKillers += 2;
+  }
+
+  // Bonus generalistas com champion Defender
+  if (myChampIsDefender && generalistas.length > 0) {
+    if (generalistasHighKill.length >= 2) totalKillers += 2;
+    else totalKillers += 1;
+  }
+
+  // Champion Defender conta como K se inimigo tem Def/SprDef
+  if (myChampIsDefender && enemyHasDefLike) {
+    totalKillers += 1; // o proprio champion Defender
+  }
+
+  const hasDefenderBonus = myChampIsDefender && (generalistas.length > 0 || enemyHasDefLike);
+  const hasDefLikeK = enemyHasDefLike && totalDefLike > 0;
+  const hasDefCombo = !enemyHasDefLike && totalDefLike >= 2;
+  const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus || hasDefLikeK || hasDefCombo) ? 1 : 0;
   const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
 
-  return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles };
+  return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles, enemyHasDefLike };
 }
 
 function recalculate() {
@@ -749,6 +816,7 @@ function recalculate() {
     const champTokenId = parseInt(champTokenIdStr);
     let gBlue=0, kBlue=0, gRed=0, kRed=0;
     let ggBlue=0, kkBlue=0, ggRed=0, kkRed=0;
+    let vaBlue=0, vaRed=0, vrBlue=0, vrRed=0, gcCount=0;
     const detailedMatches = [];
 
     matchList.forEach(({ match, champSide, champTokenId: cTokenId }, matchIdx) => {
@@ -758,8 +826,8 @@ function recalculate() {
       const enemyChampRaw = enemies.find(p => sessionChampMap[p.mokiTokenId]);
       const enemyChampClass = enemyChampRaw ? sessionChampMap[enemyChampRaw.mokiTokenId]?.gameStats?.class : null;
 
-      const allyResult = classifyTeam(allies, champClass, enemyChampClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, false, killThreshold);
-      const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, true, killThreshold);
+      const allyResult = classifyTeam(allies, champClass, enemyChampClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, false, killThreshold, enemies);
+      const enemyResult = classifyTeam(enemies, enemyChampClass, champClass, sessionGetMokiClass, sessionGetStats, sessionGetAvgKills, sessionChampMap, true, killThreshold, allies);
 
       if (allyResult.binGachas > 0) gBlue++;
       if (allyResult.binKillers > 0) kBlue++;
@@ -769,6 +837,23 @@ function recalculate() {
       kkBlue += allyResult.totalKillers;
       ggRed += enemyResult.totalGachas;
       kkRed += enemyResult.totalKillers;
+
+      const aK = allyResult.totalKillers;
+      const eK = enemyResult.totalKillers;
+      if (aK > eK) { if (eK === 0) vaBlue++; else vrBlue++; }
+      else if (eK > aK) { if (aK === 0) vaRed++; else vrRed++; }
+
+      const ecStats = sessionGetStats(enemyChampRaw?.mokiTokenId);
+      const ecStr = ecStats?.strength?.total || 0;
+      const ecDex = ecStats?.dexterity?.total || 0;
+      const ecDef = ecStats?.defense?.total || 0;
+      const ecCls = entry.enemyChampClass;
+      if (ecCls) {
+        const isGachaEC = ecCls === 'Striker' ||
+          (ecCls === 'Sprinter' && ecDex > ecDef) ||
+          (ecCls === 'Grinder' && ecDex > ecStr);
+        if (isGachaEC) gcCount++;
+      }
 
       const buildDetail = (p, role) => ({
         tokenId: p.mokiTokenId, name: p.name,
@@ -799,6 +884,7 @@ function recalculate() {
     allRows.push({
       name: champ.name, class: champ.gameStats?.class || '?', champTokenId,
       gBlue, kBlue, gRed, kRed, ggBlue, kkBlue, ggRed, kkRed,
+      vaBlue, vaRed, vrBlue, vrRed, gcCount,
       matches: matchList.length
     });
   }
@@ -956,6 +1042,9 @@ function renderTable() {
       <td class="col-group-red2"><span class="num ${r.ggRed===0?'zero':''}">${r.ggRed}</span></td>
       <td class="col-red"><span class="num ${r.kkRed===0?'zero':''}">${r.kkRed}</span></td>
       <td><span style="color:var(--muted);font-family:Space Mono,monospace;font-size:13px">${r.matches}</span></td>
+      <td style="border-left:2px solid rgba(180,180,180,0.3);background:rgba(180,180,180,0.06)"><span class="num" style="font-size:13px">${r.vaBlue}<span style="color:#555">/${r.vaRed}</span></span></td>
+      <td style="background:rgba(180,180,180,0.06);border-left:1px solid rgba(180,180,180,0.2)"><span class="num" style="font-size:13px">${r.vrBlue}<span style="color:#555">/${r.vrRed}</span></span></td>
+      <td style="background:rgba(180,180,180,0.06);border-left:1px solid rgba(180,180,180,0.2)"><span class="num" style="font-size:13px">${r.gcCount}</span></td>
     </tr>
   `).join('');
 }
