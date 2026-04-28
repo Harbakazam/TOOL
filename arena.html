@@ -216,7 +216,6 @@
         <th class="col-blue th-blue" onclick="sortBy('kkBlue')">KK🔵 <span id="arr-kkBlue"></span></th>
         <th class="col-group-red2 th-red" onclick="sortBy('ggRed')">BB🔴 <span id="arr-ggRed"></span></th>
         <th class="col-red th-red" onclick="sortBy('kkRed')">KK🔴 <span id="arr-kkRed"></span></th>
-        <th onclick="sortBy('matches')" style="color:var(--muted)">Pts <span id="arr-matches"></span></th>
         <th style="border-left:2px solid rgba(180,180,180,0.3);background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px" onclick="sortBy('vaBlue')">VA <span id="arr-vaBlue"></span></th>
         <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('vrBlue')">VR <span id="arr-vrBlue"></span></th>
         <th style="background:rgba(180,180,180,0.06);color:#aaaacc;cursor:pointer;font-family:Space Mono,monospace;font-size:11px;padding:12px 14px;border-left:1px solid rgba(180,180,180,0.2)" onclick="sortBy('gcCount')">GC <span id="arr-gcCount"></span></th>
@@ -780,7 +779,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
 
   // Champion Defender conta como K se inimigo tem Def/SprDef
   if (myChampIsDefender && enemyHasDefLike) {
-    totalKillers += 1; // o proprio champion Defender
+    totalKillers += 1;
   }
 
   const hasDefenderBonus = myChampIsDefender && (generalistas.length > 0 || enemyHasDefLike);
@@ -1044,7 +1043,6 @@ function renderTable() {
       <td class="col-blue"><span class="num ${r.kkBlue===0?'zero':''}">${r.kkBlue}</span></td>
       <td class="col-group-red2"><span class="num ${r.ggRed===0?'zero':''}">${r.ggRed}</span></td>
       <td class="col-red"><span class="num ${r.kkRed===0?'zero':''}">${r.kkRed}</span></td>
-      <td><span style="color:var(--muted);font-family:Space Mono,monospace;font-size:13px">${r.matches}</span></td>
       <td style="border-left:2px solid rgba(180,180,180,0.3);background:rgba(180,180,180,0.06)"><span class="num" style="font-size:13px">${r.vaBlue}<span style="color:#555">/${r.vaRed}</span></span></td>
       <td style="background:rgba(180,180,180,0.06);border-left:1px solid rgba(180,180,180,0.2)"><span class="num" style="font-size:13px">${r.vrBlue}<span style="color:#555">/${r.vrRed}</span></span></td>
       <td style="background:rgba(180,180,180,0.06);border-left:1px solid rgba(180,180,180,0.2)"><span class="num" style="font-size:13px">${r.gcCount}</span></td>
