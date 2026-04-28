@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.3</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.4</span></div>
 </div>
 
 <div class="setup">
@@ -669,8 +669,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
 
   const classified = players.map(p => {
     const tokenId = p.mokiTokenId;
-    // Champion inimigo: ignorar nas contagens, manter apenas para renderizacao
-    if (champMap[tokenId]) return { tokenId, cls: getMokiClass(p), role: 'CHAMP', str: 0, dex: 0, def: 0, avgKills: 0 };
+    const isEnemyChamp = !!champMap[tokenId];
     const cls = getMokiClass(p);
     const stats = getStats(tokenId);
     const str = stats?.strength?.total || 0;
@@ -688,12 +687,12 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
       case 'Support': role = 'SUP'; break;
       default: role = (threshold >= 1.4 ? avgKills >= threshold : avgKills > threshold) ? 'K' : 'N';
     }
-    return { tokenId, cls, role, str, dex, def, avgKills };
+    return { tokenId, cls, role, str, dex, def, avgKills, isEnemyChamp };
   });
 
-  // Contar Def/SprDef no proprio time (excluindo champion inimigo com role CHAMP)
-  const defCount = classified.filter(c => c.role === 'DEF').length;
-  const sprDefCount = classified.filter(c => c.role === 'SPR_DEF').length;
+  // Contar Def/SprDef no proprio time (excluindo champion inimigo)
+  const defCount = classified.filter(c => !c.isEnemyChamp && c.role === 'DEF').length;
+  const sprDefCount = classified.filter(c => !c.isEnemyChamp && c.role === 'SPR_DEF').length;
   const totalDefLike = defCount + sprDefCount;
 
   // Verificar se champion inimigo é Def ou SprDef
@@ -719,7 +718,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const myChampIsDefender = isDefenderChamp(myChampClass);
 
   // Generalistas
-  const generalistas = classified.filter(c => c.role !== 'CHAMP' && ['Forward','Anchor','Center','Flanker'].includes(c.cls));
+  const generalistas = classified.filter(c => !c.isEnemyChamp && ['Forward','Anchor','Center','Flanker'].includes(c.cls));
   const generalistasHighKill = generalistas.filter(c => threshold >= 1.4 ? c.avgKills >= threshold : c.avgKills > threshold);
 
   // Resolver roles finais
@@ -748,6 +747,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   let totalGachas = 0;
 
   finalRoles.forEach((role, i) => {
+    if (classified[i].isEnemyChamp) return; // champion inimigo nao conta nas totalizacoes
     const origRole = classified[i].role;
     const isGeneralista = ['Forward','Anchor','Center','Flanker'].includes(classified[i].cls);
     if (role === 'B') {
