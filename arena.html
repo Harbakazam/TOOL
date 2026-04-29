@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.5</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.6</span></div>
 </div>
 
 <div class="setup">
@@ -766,10 +766,12 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
     }
   });
 
-  // Regra: Def/SprDef sem inimigo Def (independente do champion proprio)
+  // Regra: Def/SprDef sem inimigo Def
+  // Se champion do proprio time é Defender, ele conta como +1 no total de DefLike
+  const effectiveDefLike = totalDefLike + (myChampIsDefender ? 1 : 0);
   if (!enemyHasDefLike) {
-    if (totalDefLike === 2) totalKillers += 1;
-    else if (totalDefLike >= 3) totalKillers += 2;
+    if (effectiveDefLike === 2) totalKillers += 1;
+    else if (effectiveDefLike >= 3) totalKillers += 2;
     // 1 sozinho = N
   }
 
@@ -795,8 +797,8 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   });
 
   const hasDefenderBonus = myChampIsDefender && (generalistas.length > 0 || enemyHasDefLike);
-  const hasDefLikeK = enemyHasDefLike && totalDefLike > 0;
-  const hasDefCombo = !enemyHasDefLike && totalDefLike >= 2;
+  const hasDefLikeK = enemyHasDefLike && (totalDefLike > 0 || myChampIsDefender);
+  const hasDefCombo = !enemyHasDefLike && effectiveDefLike >= 2;
   const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus || hasDefLikeK || hasDefCombo) ? 1 : 0;
   const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
 
@@ -1077,4 +1079,3 @@ function renderSummary() {
 </script>
 </body>
 </html>
-
