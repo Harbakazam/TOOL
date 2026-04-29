@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.6</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.8</span></div>
 </div>
 
 <div class="setup">
@@ -757,7 +757,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
       } else if (isGeneralista && myChampIsDefender) {
         // generalistas com champion Defender: tratado na Lei 1 abaixo
       } else if (origRole === 'DEF' || origRole === 'SPR_DEF') {
-        if (enemyHasDefLike) {
+        if (enemyHasDefLike && !classified[i].isEnemyChamp) {
           totalKillers++;
         }
       } else {
@@ -790,9 +790,10 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   }
 
   console.log('classifyTeam debug:', {
-    myChampClass, enemyChampClass, enemyHasDefLike, totalDefLike,
+    myChampClass, enemyChampClass, enemyHasDefLike, totalDefLike, effectiveDefLike: totalDefLike + (myChampIsDefender ? 1 : 0),
     generalistas: generalistas.length, generalistasHighKill: generalistasHighKill.length,
     totalKillers, totalGachas,
+    classified: classified.map(c => ({cls: c.cls, role: c.role, isEnemyChamp: c.isEnemyChamp})),
     roles: finalRoles
   });
 
