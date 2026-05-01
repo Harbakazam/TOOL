@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 2.8</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 3.0</span></div>
 </div>
 
 <div class="setup">
@@ -760,10 +760,20 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
         if (enemyHasDefLike && !classified[i].isEnemyChamp) {
           totalKillers++;
         }
+        // champion inimigo DEF/SprDef: tratado no bloco abaixo
       } else {
         totalKillers++;
       }
     }
+  });
+
+  // Contar champion inimigo DEF/SprDef usando o finalRole (badge = contagem)
+  finalRoles.forEach((role, i) => {
+    if (!classified[i].isEnemyChamp) return;
+    if (classified[i].role !== 'DEF' && classified[i].role !== 'SPR_DEF') return;
+    // Mesmo critério dos suportes DEF/SprDef
+    if (role === 'K') totalKillers++;
+    else if (role === 'B') totalGachas++;
   });
 
   // Regra: Def/SprDef sem inimigo Def
@@ -789,13 +799,7 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
     totalKillers += 1;
   }
 
-  console.log('classifyTeam debug:', {
-    myChampClass, enemyChampClass, enemyHasDefLike, totalDefLike, effectiveDefLike: totalDefLike + (myChampIsDefender ? 1 : 0),
-    generalistas: generalistas.length, generalistasHighKill: generalistasHighKill.length,
-    totalKillers, totalGachas,
-    classified: classified.map(c => ({cls: c.cls, role: c.role, isEnemyChamp: c.isEnemyChamp})),
-    roles: finalRoles
-  });
+
 
   const hasDefenderBonus = myChampIsDefender && (generalistas.length > 0 || enemyHasDefLike);
   const hasDefLikeK = enemyHasDefLike && (totalDefLike > 0 || myChampIsDefender);
