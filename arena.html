@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 3.0</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 3.1</span></div>
 </div>
 
 <div class="setup">
@@ -794,8 +794,9 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   }
 
   // Lei 2: Champion Defender ativado pelo inimigo (independente da Lei 1)
-  // O champion Defender conta como K individual se inimigo tem Def/SprDef
-  if (myChampIsDefender && enemyHasDefLike) {
+  // Só se aplica ao time aliado (isEnemyTeam = false)
+  // pois quando isEnemyTeam = true, o champion já está no array players e é contado pelo segundo forEach
+  if (myChampIsDefender && enemyHasDefLike && !isEnemyTeam) {
     totalKillers += 1;
   }
 
