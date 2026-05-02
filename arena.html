@@ -145,7 +145,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 3.1</span></div>
+  <div class="logo">GRAND<span>ARENA</span> <span style="color:var(--muted);font-size:0.9rem;font-weight:400">analyst 3.2-debug</span></div>
 </div>
 
 <div class="setup">
@@ -628,7 +628,9 @@ async function loadData() {
           allyB: allyResult.totalGachas,
           allyK: allyResult.totalKillers,
           enemyB: enemyResult.totalGachas,
-          enemyK: enemyResult.totalKillers
+          enemyK: enemyResult.totalKillers,
+          _debugAlly: allyResult._debug,
+          _debugEnemy: enemyResult._debug
         });
       });
 
@@ -808,7 +810,9 @@ function classifyTeam(players, myChampClass, enemyChampClass, getMokiClass, getS
   const binKillers = (finalRoles.some(r => r === 'K') || hasDefenderBonus || hasDefLikeK || hasDefCombo) ? 1 : 0;
   const binGachas = finalRoles.some(r => r === 'B') ? 1 : 0;
 
-  return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles, enemyHasDefLike };
+  return { binKillers, binGachas, totalKillers, totalGachas, roles: finalRoles, enemyHasDefLike,
+    _debug: { myChampClass, enemyChampClass, enemyHasDefLike, totalDefLike, effectiveDefLike: totalDefLike + (myChampIsDefender ? 1 : 0), generalistas: generalistas.length, generalistasHighKill: generalistasHighKill.length, isEnemyTeam,
+      classified: classified.map(c => ({cls: c.cls, role: c.role, isEnemyChamp: c.isEnemyChamp})), roles: finalRoles } };
 }
 
 function recalculate() {
@@ -930,6 +934,12 @@ function openModal(champTokenId) {
         <span class="match-score" style="color:var(--muted)">vs</span>
         <span class="match-score" style="color:var(--red)">B${m.enemyB} K${m.enemyK}</span>
         ${vantagem}
+      </div>
+      <div style="font-size:10px;color:#666;font-family:monospace;padding:2px 8px;background:#111;border-radius:4px;margin:2px 0">
+        ALI: champ=${m._debugAlly?.myChampClass} eHasD=${m._debugAlly?.enemyHasDefLike} tDef=${m._debugAlly?.totalDefLike} gen=${m._debugAlly?.generalistas} genHK=${m._debugAlly?.generalistasHighKill} isET=${m._debugAlly?.isEnemyTeam} | roles=${JSON.stringify(m._debugAlly?.roles)}
+      </div>
+      <div style="font-size:10px;color:#666;font-family:monospace;padding:2px 8px;background:#111;border-radius:4px;margin:2px 0">
+        INI: champ=${m._debugEnemy?.myChampClass} eHasD=${m._debugEnemy?.enemyHasDefLike} tDef=${m._debugEnemy?.totalDefLike} gen=${m._debugEnemy?.generalistas} genHK=${m._debugEnemy?.generalistasHighKill} isET=${m._debugEnemy?.isEnemyTeam} | roles=${JSON.stringify(m._debugEnemy?.roles)}
       </div>
       <div class="match-teams">
         <div class="team">
